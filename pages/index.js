@@ -28,7 +28,7 @@ export default function Home() {
     // setSocket(io(END_POINT).emit("wassap", "wassap"));
 
     fetch('/api/socketio').finally(() => {
-      const socket = io('/', { transports: ['websocket'], upgrade: false });
+      const socket = io();
       setSocket(socket);
     });
 
