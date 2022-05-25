@@ -24,8 +24,6 @@ export default function Home() {
   const [openIntroModal, setIntroModal] = useState(false);
   const [resultModalDesc, setResultModalDesc] = useState('');
 
-  let myInterval = null;
-
   useEffect(() => {
     // setSocket(io(END_POINT).emit("wassap", "wassap"));
 
@@ -117,6 +115,7 @@ export default function Home() {
 
   // For Times Up Event
   useEffect(() => {
+    let myInterval = null;
     if (isReady && isMyTurn) {
       myInterval = setInterval(() => {
         if (timer === 0) {

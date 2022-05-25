@@ -24,7 +24,7 @@ export default function GameResultModal(props) {
             setOpen(props.open);
 
         }
-    }, [props]);
+    }, [props, win]);
 
     const RenderEmoji = () => {
         const comp = [];

@@ -8,9 +8,10 @@ import { v4 as uuidv4 } from 'uuid';
 export default function GameStartIntroModal(props) {
     const [open, setOpen] = useState(false);
     const [countdown, setCoutdown] = useState(5);
-    let myInterval = null;
 
     useEffect(() => {
+        let myInterval = null;
+
         setOpen(props.open)
 
         if (open) {
