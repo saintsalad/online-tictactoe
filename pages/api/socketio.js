@@ -16,7 +16,7 @@ const Socketio = (req, res) => {
 
     let ROOMS = [];
 
-    res.status(200).json({ name: 'cales' });
+    res.status(200).json({ rooms: ROOMS });
     if (!res.socket.server.io) {
         console.log('*First use, starting socket.io')
 
@@ -39,6 +39,18 @@ const Socketio = (req, res) => {
 
                 // remove room/s that belongs to someone disconnected
                 ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
+            });
+
+            socket.on('exit-room', (data, callback) => {
+                console.log(ROOMS);
+                socket.leave(data.room);
+                ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
+
+                callback({
+                    status: 'ok'
+                });
+
+                console.log(ROOMS);
             });
 
             socket.on('move', (data) => {

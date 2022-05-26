@@ -22,6 +22,7 @@ export default function Home() {
   const [timer, setTimer] = useState(TIMER_SECS);
   const [openIntroModal, setIntroModal] = useState(false);
   const [resultModalDesc, setResultModalDesc] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // setSocket(io(END_POINT).emit("wassap", "wassap"));
@@ -36,8 +37,9 @@ export default function Home() {
   }, []);
 
   const getPlayerName = () => {
-    const name = prompt('Please enter you name');
-    setMyName(name ? name : 'Someone');
+    // const name = prompt('Please enter you name');
+    // setMyName(name ? name : 'Someone');
+    setMyName('Someone');
   }
 
   useEffect(() => {
@@ -55,8 +57,10 @@ export default function Home() {
         setIsHost(d.isHost);
 
         if (d.isHost) {
+          setIsLoading(true);
           setIsReady(d.isReady);
         } else {
+          setIsLoading(false);
           setIntroModal(true);
           setTimeout(() => {
             setIsReady(d.isReady);
@@ -77,7 +81,7 @@ export default function Home() {
   // For Game Ready Event
   useEffect(() => {
     const callback = (d) => {
-      console.log('ready')
+      setIsLoading(false);
       setOppName(d.name);
       setIntroModal(true);
       setTimeout(() => {
@@ -87,6 +91,7 @@ export default function Home() {
     }
 
     if (socket) {
+      console.log('ready');
       socket.on('game-ready', (d) => callback(d));
     }
 
@@ -235,18 +240,41 @@ export default function Home() {
     // setIsMatchDone(false);
   }
 
+  // useEffect(() => {
+
+  //   if (!isMatchDone) {
+  //     setIsReady(false);
+  //     setMyRoom('');
+  //     setIsHost(null);
+  //     setMoves(DEFAULT_MOVES);
+  //     setOppName('');
+  //     setSymbol('');
+  //     setTimer(TIMER_SECS);
+  //     setIntroModal(false);
+  //     setResultModalDesc('');
+  //     setIsWin(null);
+  //     setIsLoading(false);
+  //   }
+
+  // }, [isMatchDone]);
+
   const handleResultModalExit = () => {
-    setIsReady(false);
-    setMyRoom('');
-    setIsHost(null);
-    setIsMatchDone(false);
-    setMoves(DEFAULT_MOVES);
-    setIsWin(false);
-    setOppName('');
-    setSymbol('');
-    setTimer(TIMER_SECS);
-    setIntroModal(false);
-    setResultModalDesc('');
+    setIsLoading(true);
+    socket.emit('exit-room', { room: myRoom }, (res) => {
+      console.log('callback', res.status);
+      setIsMatchDone(false);
+      setIsReady(false);
+      setMyRoom('');
+      setIsHost(null);
+      setMoves(DEFAULT_MOVES);
+      setOppName('');
+      setSymbol('');
+      setTimer(TIMER_SECS);
+      setIntroModal(false);
+      setResultModalDesc('');
+      setIsWin(null);
+      setIsLoading(false);
+    })
   }
 
   const handleResultModalPlayAgain = () => {
@@ -283,7 +311,7 @@ export default function Home() {
         </div>)
       }
       <hr></hr>
-      {isReady && (
+      {(isReady && !isLoading) && (
         <div style={{ pointerEvents: (isMyTurn ? 'auto' : 'none') }}
           className={'board ' + (isMyTurn ? symbol : '')} id='board'>
           {moves.map((cell, i) => (
@@ -291,6 +319,11 @@ export default function Home() {
               onClick={() => handleCellClick(i)} data-cell
               key={i + cell} index={i} id={'cell' + i}> </div>
           ))}
+        </div>
+      )}
+      {(!isReady && isLoading) && (
+        <div className="fixed justify-center flex items-center h-screen w-screen">
+          <p>Loading ....</p>
         </div>
       )}
     </div>
