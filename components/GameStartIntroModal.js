@@ -1,9 +1,4 @@
-import { Fragment, useRef, useState, useEffect } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { FlagIcon } from '@heroicons/react/outline';
-import { EmojiHappyIcon } from '@heroicons/react/outline';
-import { EmojiSadIcon } from '@heroicons/react/outline';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useEffect } from 'react';
 
 export default function GameStartIntroModal(props) {
     const [open, setOpen] = useState(false);
@@ -12,7 +7,7 @@ export default function GameStartIntroModal(props) {
     useEffect(() => {
         let myInterval = null;
 
-        setOpen(props.open)
+        setOpen(props.open);
 
         if (open) {
             myInterval = setInterval(() => {
@@ -20,6 +15,8 @@ export default function GameStartIntroModal(props) {
                     setCoutdown(countdown - 1);
                 }
             }, 1000);
+        } else {
+            setCoutdown(5);
         }
         return () => clearInterval(myInterval);
     }, [countdown, props, open]);

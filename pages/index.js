@@ -6,8 +6,7 @@ import GameStartIntroModal from "../components/GameStartIntroModal";
 
 export default function Home() {
 
-  const END_POINT = "http://localhost:3001"
-
+  const DEFAULT_MOVES = ['', '', '', '', '', '', '', '', ''];
   const TIMER_SECS = 5;
   const [socket, setSocket] = useState(null);
   const [myRoom, setMyRoom] = useState('');
@@ -16,7 +15,7 @@ export default function Home() {
   const [isHost, setIsHost] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [symbol, setSymbol] = useState('');
-  const [moves, setMoves] = useState(['', '', '', '', '', '', '', '', '']);
+  const [moves, setMoves] = useState(DEFAULT_MOVES);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [isMatchDone, setIsMatchDone] = useState(false);
   const [isWin, setIsWin] = useState(false);
@@ -37,9 +36,8 @@ export default function Home() {
   }, []);
 
   const getPlayerName = () => {
-    // const name = prompt('Please enter you name');
-    // setMyName(name ? name : 'Someone');
-    setMyName('someone');
+    const name = prompt('Please enter you name');
+    setMyName(name ? name : 'Someone');
   }
 
   useEffect(() => {
@@ -68,18 +66,6 @@ export default function Home() {
         }
 
       });
-
-      // socket.on('game-ready', (d) => {
-      //   console.log('ready');
-      //   setOppName(d.name);
-
-      //   setIntroModal(true);
-      //   setTimeout(() => {
-      //     setIsReady(d.isReady);
-      //     setIntroModal(false);
-      //   }, 5000);
-
-      // });
 
       socket.on('move', (d) => {
         setIsMyTurn(d.turn === symbol ? false : true);
@@ -137,7 +123,7 @@ export default function Home() {
     }
 
     return () => clearInterval(myInterval);
-  }, [timer, isReady, isMyTurn, isMatchDone])
+  }, [timer, isReady, isMyTurn, isMatchDone, myRoom, socket, symbol])
 
   // Game Result Event
   useEffect(() => {
@@ -250,7 +236,17 @@ export default function Home() {
   }
 
   const handleResultModalExit = () => {
-    console.log('exit');
+    setIsReady(false);
+    setMyRoom('');
+    setIsHost(null);
+    setIsMatchDone(false);
+    setMoves(DEFAULT_MOVES);
+    setIsWin(false);
+    setOppName('');
+    setSymbol('');
+    setTimer(TIMER_SECS);
+    setIntroModal(false);
+    setResultModalDesc('');
   }
 
   const handleResultModalPlayAgain = () => {
@@ -273,6 +269,7 @@ export default function Home() {
             <p>name: {myName}</p>
             <p>opp: {oppName}</p>
             <p>timer: {timer}</p>
+            <p>{isMyTurn ? 'Your Turn...' : 'Enemy Turn...'}</p>
           </small>
 
         )}
