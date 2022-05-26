@@ -97,7 +97,8 @@ const Socketio = (req, res) => {
                             room: r,
                             isHost: false,
                             isReady: true,
-                            name: h.hostName
+                            name: (typeof h.hostName || h.hostName === null || h.hostName === '') ? 'unknown' : h.hostName
+
                         });
                         socket.to(r).emit('game-ready', {
                             isReady: true,
