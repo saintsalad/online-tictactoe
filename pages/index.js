@@ -39,7 +39,7 @@ export default function Home() {
   const getPlayerName = () => {
     // const name = prompt('Please enter you name');
     // setMyName(name ? name : 'Someone');
-    setMyName('someone')
+    setMyName('someone');
   }
 
   useEffect(() => {
