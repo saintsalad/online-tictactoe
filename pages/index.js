@@ -39,15 +39,6 @@ export default function Home() {
         getFromStorage('player-name') === null ||
         getFromStorage('player-name') === '') {
         Router.push('/signin');
-
-
-        // const name = prompt('Please enter you name');
-        // if (!name.replace(/\s/g, '').length || name === '') {
-        //   getPlayerName();
-        // } else {
-        //   setToStorage('player-name', name);
-        //   setMyName(name);
-        // }
       } else {
         setMyName(getFromStorage('player-name'));
       }
