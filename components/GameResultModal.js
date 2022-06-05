@@ -14,18 +14,17 @@ export default function GameResultModal(props) {
 
     useEffect(() => {
         setWin(props.win);
-        setModalDesc(props.modalDesc || MODAl_DESC);
         setOpen(props.open);
-        if (win != null) {
-            setModalMsg(win ? 'You Win' : 'You Lose')
+        if (props.win != null) {
+            setModalMsg(props.win ? 'You Win' : 'You Lose')
             setOpen(props.open);
-
-        } else if (open && win === null) {
+            setModalDesc(props.modalDesc ? props.modalDesc : MODAl_DESC);
+        } else if (props.open && props.win === null) {
             setModalMsg('Draw');
             setOpen(props.open);
-
+            setModalDesc(props.modalDesc ? props.modalDesc : MODAl_DESC);
         }
-    }, [props, win, open]);
+    }, [props]);
 
     const RenderEmoji = () => {
         const comp = [];
@@ -56,11 +55,9 @@ export default function GameResultModal(props) {
 
     }
 
-    const cancelButtonRef = useRef(null);
-
     return (
         <Transition.Root show={open} as={Fragment}>
-            <Dialog as="div" className="fixed z-10 inset-0 overflow-y-auto" initialFocus={cancelButtonRef} onClose={setOpen}>
+            <Dialog as="div" className="fixed z-10 inset-0 overflow-y-auto" onClose={() => { }}>
                 <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                     <Transition.Child
                         as={Fragment}
@@ -114,7 +111,6 @@ export default function GameResultModal(props) {
                                     type="button"
                                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                                     onClick={() => { props.clickExit(); }}
-                                    ref={cancelButtonRef}
                                 >
                                     Exit
                                 </button>

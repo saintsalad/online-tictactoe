@@ -16,7 +16,8 @@ const Socketio = (req, res) => {
 
     let ROOMS = [];
 
-    res.status(200).json({ rooms: ROOMS });
+    res.status(200).json({ user: 'hazel' });
+
     if (!res.socket.server.io) {
         console.log('*First use, starting socket.io')
 
@@ -24,34 +25,52 @@ const Socketio = (req, res) => {
 
         // SOCKET IOs
 
-
         io.on('connection', (socket) => {
-            // ROOMS = getActiveRooms(io);
-            // console.log('connected :', socket.id);
 
-            socket.emit('update', {
-                rooms: getActiveRooms(io)
+
+            socket.onAny((event, ...args) => {
+                // console.log(`got ${event}`);
+                setTimeout(() => {
+                    adminGetRooms(io);
+                }, 1000);
             });
 
             socket.on('disconnecting', () => {
                 const room = Array.from(socket.rooms)[1];
+                socket.leave(room);
                 socket.to(room).emit('enemy-disconnect', {});
 
                 // remove room/s that belongs to someone disconnected
                 ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
+                console.log('disconnect')
             });
 
             socket.on('exit-room', (data, callback) => {
-                console.log(ROOMS);
                 socket.leave(data.room);
-                ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
+                ROOMS = ROOMS.filter(item => item.room !== data.room);
+                callback({
+                    status: 'ok'
+                });
+                socket.to(data.room).emit('exit-room', {});
+            });
+
+            socket.on('rematch', (data, callback) => {
+                socket.to(data.room).emit('rematch');
+
+                if (typeof data.acceptRematch !== 'undefined') {
+                    if (data.acceptRematch) {
+                        console.log('accepted');
+
+                        io.to(data.room).emit('game-ready', {
+                            isReady: true,
+                        });
+                    }
+                }
 
                 callback({
                     status: 'ok'
                 });
-
-                console.log(ROOMS);
-            });
+            })
 
             socket.on('move', (data) => {
                 socket.to(data.room).emit('move', {
@@ -90,20 +109,26 @@ const Socketio = (req, res) => {
 
                 getAvailableRoom(io).then(r => {
                     if (r) {
-                        // find available room and join
-                        socket.join(r);
-                        const h = ROOMS.find(item => item.room === r);
-                        socket.emit('joined-room', {
-                            room: r,
-                            isHost: false,
-                            isReady: true,
-                            name: (typeof h.hostName || h.hostName === null || h.hostName === '') ? 'unknown' : h.hostName
 
+                        // find available room and join
+                        getRoomDetails(r).then(h => {
+                            if (h) {
+                                socket.emit('joined-room', {
+                                    room: r,
+                                    isHost: false,
+                                    isReady: true,
+                                    name: (typeof h.hostName === 'undefined' || h.hostName === null || h.hostName === '') ? 'unknown' : h.hostName
+
+                                });
+                                socket.to(r).emit('game-ready', {
+                                    isReady: true,
+                                    name: data.name
+                                });
+
+                                socket.join(r);
+                            }
                         });
-                        socket.to(r).emit('game-ready', {
-                            isReady: true,
-                            name: data.name
-                        });
+
                     } else {
                         // create room
                         let autoroom = uuidv4();
@@ -122,16 +147,6 @@ const Socketio = (req, res) => {
 
                 });
             });
-
-            // io.of("/").adapter.on("join-room", (room, id) => {
-            //     if (getActiveRooms(io).length >= 1) {
-            //         console.log(`socket ${id} has joined ${room}`);
-            //     }
-            // });
-
-            // io.of("/").adapter.on("leave-room", (room, id) => {
-            //     console.log(`socket ${id} has leave ${room}`);
-            // });
         });
 
         function getActiveRooms(io) {
@@ -145,6 +160,13 @@ const Socketio = (req, res) => {
             // ==> ['room1', 'room2']
             const res = filtered.map(i => i[0]);
             return res;
+        }
+
+        const adminGetRooms = (io) => {
+            io.emit('admin-rooms', {
+                rooms: ROOMS,
+                activeRooms: getActiveRooms(io)
+            });
         }
 
         const isDraw = (_moves) => {
@@ -179,6 +201,15 @@ const Socketio = (req, res) => {
                 } else {
                     console.log('no room available')
                 }
+            }
+        }
+
+        const getRoomDetails = async (room) => {
+            const h = await ROOMS.find(item => item.room === room);
+            if (h) {
+                return h;
+            } else {
+                console.log('Error: No room found, Function: getRoomDetails')
             }
         }
 
