@@ -3,7 +3,7 @@ import AnimatePage from '../components/AnimatePage';
 import { setToStorage } from '../helper/localStorage';
 import Router from "next/router";
 
-function signin() {
+export default function Signin() {
 
     const [name, setName] = useState('');
 
@@ -41,5 +41,3 @@ function signin() {
         </AnimatePage>
     )
 }
-
-export default signin

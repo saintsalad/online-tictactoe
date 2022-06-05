@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import AlertModal from "../components/AlertModal";
 import GameResultModal from '../components/GameResultModal';
 import GameStartIntroModal from "../components/GameStartIntroModal";
-import { getFromStorage, setToStorage } from '../helper/localStorage';
+import { getFromStorage } from '../helper/localStorage';
 import Router from "next/router";
 import AnimatePage from '../components/AnimatePage';
 
