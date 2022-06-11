@@ -35,6 +35,10 @@ const Socketio = (req, res) => {
                 }, 1000);
             });
 
+            socket.on('enemy-timer', (data) => {
+                socket.to(data.room).emit('enemy-timer', { timer: data.timer });
+            });
+
             socket.on('disconnecting', () => {
                 const room = Array.from(socket.rooms)[1];
                 socket.leave(room);

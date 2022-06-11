@@ -11,6 +11,7 @@ export default function GameResultModal(props) {
     const [modalMsg, setModalMsg] = useState('');
     const [modalDesc, setModalDesc] = useState('');
     const MODAl_DESC = 'If you wish to have a rematch, please click <b>Play Again</b>.';
+    const isDisable = useRef(false);
 
     useEffect(() => {
         setWin(props.win);
@@ -25,6 +26,34 @@ export default function GameResultModal(props) {
             setModalDesc(props.modalDesc ? props.modalDesc : MODAl_DESC);
         }
     }, [props]);
+
+
+
+    const playAgain = () => {
+        if (!isDisable.current) {
+            props.clickPlayAgain();
+            isDisable.current = true;
+
+            setTimeout(() => {
+                isDisable.current = false
+            }, 1000);
+        } else {
+            console.log(isDisable.current);
+        }
+    }
+
+    const exit = () => {
+        if (!isDisable.current) {
+            props.clickExit();
+            isDisable.current = true;
+
+            setTimeout(() => {
+                isDisable.current = false
+            }, 1000);
+        } else {
+            console.log(isDisable.current);
+        }
+    }
 
     const RenderEmoji = () => {
         const comp = [];
@@ -104,13 +133,13 @@ export default function GameResultModal(props) {
                                 <button
                                     type="button"
                                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-400 text-base font-medium text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={() => { props.clickPlayAgain() }}>
+                                    onClick={() => playAgain()}>
                                     Play Again
                                 </button>
                                 <button
                                     type="button"
                                     className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={() => { props.clickExit(); }}
+                                    onClick={() => exit()}
                                 >
                                     Exit
                                 </button>

@@ -25,7 +25,7 @@ export default function GameStartIntroModal(props) {
         <>
             {open &&
                 (
-                    <div className='fixed justify-center flex items-center h-screen w-screen bg-gray-500 bg-opacity-50 transition-opacity'>
+                    <div className='z-10 fixed justify-center flex items-center h-screen w-screen bg-gray-500 bg-opacity-50 transition-opacity'>
                         <div className='text-xl animate-heartbeating'>{countdown}</div>
                     </div>
                 )

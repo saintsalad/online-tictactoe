@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Digital';
+  src: url('../asset/Digital/DS-DIGI.TTF');
+}
+
 html,
 body {
   padding: 0;
@@ -25,7 +30,7 @@ a {
 *,
 *::after,
 *::before {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
 }
 
 :root {
@@ -40,9 +45,13 @@ body {
   background-attachment: fixed;
 }
 
+.time-container {
+  font-family: 'Digital';
+}
+
 .board {
   /* width: 100vw; */
-  height: 100vh;
+  height: 70vh;
   display: grid;
   justify-content: center;
   align-content: center;
@@ -124,6 +133,24 @@ body {
   border-radius: 10px;
 }
 
+.symbol.x::before,
+.symbol.x::after {
+  content: '';
+  position: absolute;
+  width: calc(var(--mark-size) * .10);
+  height: calc(var(--mark-size) * 0.42);
+  border-radius: 10px;
+  background-color: #FFFFFF;
+}
+
+.symbol.x::before {
+  transform: rotate(45deg);
+}
+
+.symbol.x::after {
+  transform: rotate(-45deg);
+}
+
 .cell.x::before,
 .board.x .cell:not(.x):not(.circle):hover::before {
   transform: rotate(45deg);
@@ -148,6 +175,27 @@ body {
   width: var(--mark-size);
   height: var(--mark-size);
 }
+
+.symbol.circle::before,
+.symbol.circle::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+.symbol.circle::before {
+  width: calc(var(--mark-size) /2.5);
+  height: calc(var(--mark-size) / 2.5);
+  background: linear-gradient(#AFACFA, #746BFA, #5F54FB);
+}
+
+.symbol.circle::after {
+  width: calc(var(--mark-size) * .2);
+  height: calc(var(--mark-size) * .2);
+  background-color: #040B18;
+  z-index: 0;
+}
+
 
 .cell.circle::after,
 .board.circle .cell:not(.x):not(.circle):hover::after {
