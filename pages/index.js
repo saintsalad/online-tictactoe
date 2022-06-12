@@ -441,10 +441,13 @@ export default function Home() {
             )}
 
           {(!isReady && myRoom === '') &&
-            (<div className="flex w-full p-5">
+            (<div className="flex flex-col w-full p-5">
+              <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tictactoe</div>
+              <div className="text-4xl xs:text-3xl font-light mt-9">For the culture.</div>
+              <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">Design and develop with love using ReactJS, NextJS, Socket.IO, and Tailwind. </div>
               <button disabled={!socket}
                 id="findMatchBtn"
-                className="rounded-full border-0 shadow-sm px-10 py-3 bg-gradient-to-tl from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-0 focus:ring-offset-4 focus:ring-offset-transparent sm:ml-3 sm:w-auto sm:text-sm"
+                className="mt-14 rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-0 focus:ring-offset-4 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
                 onClick={handleJoinRoom}>Find Match</button>
             </div>)
           }
@@ -459,7 +462,8 @@ export default function Home() {
             </div>
           )}
           {(!isReady && isLoading) && (
-            <div className="justify-center flex items-center relative h-full">
+            <div className="justify-center flex flex-col items-center relative h-full pb-24">
+              <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
               <span className="loader"></span>
             </div>
           )}
