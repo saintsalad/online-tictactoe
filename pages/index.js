@@ -67,7 +67,10 @@ export default function Home() {
         setMyRoom(d.room)
         setSymbol(d.isHost ? 'x' : 'circle');
         setIsMyTurn(d.isHost);
-        setOppName(d.name);
+        if (!isRematch) {
+          setOppName(d.name);
+        }
+
         setIsHost(d.isHost);
 
         if (d.isHost) {
@@ -91,17 +94,19 @@ export default function Home() {
       });
 
     }
-  }, [socket, symbol]);
+  }, [socket, symbol, isRematch]);
 
   // For Game Ready Event
   useEffect(() => {
     const callback = (d) => {
       setIsLoading(false);
-      setOppName(d.name);
+
       setIntroModal(true);
       if (isRematch) {
         setTimer(TIMER_SECS);
         setIsRematch(false);
+      } else {
+        setOppName(d.name ? d.name : oppName);
       }
       mySetTimeout.current = setTimeout(() => {
         setIsReady(d.isReady);
@@ -118,7 +123,7 @@ export default function Home() {
         socket.off('game-ready', callback);
       }
     }
-  }, [socket, isRematch, isLoading]);
+  }, [socket, isRematch, isLoading, oppName]);
 
   // For Times Up Event
   useEffect(() => {
@@ -174,13 +179,13 @@ export default function Home() {
             setMyLoses(l => l + 1)
           }
           setIsMatchDone(true);
-        }, 1000);
+        }, 200);
 
       } else if (d.result === 'draw') {
         setTimeout(() => {
           setIsWin(null);
           setIsMatchDone(true);
-        }, 500);
+        }, 200);
       } else if (d.result === 'timesup' && symbol) {
 
         setTimeout(() => {
@@ -215,7 +220,6 @@ export default function Home() {
 
         if (i === 8) {
           const desc = 'Your opponent is disconnected.';
-          console.log(desc);
           clearTimeout(mySetTimeout.current);
           setTimer(TIMER_SECS);
           setIntroModal(false);
@@ -341,7 +345,7 @@ export default function Home() {
         setMyRoom('');
         setIsHost(null);
         setMoves(DEFAULT_MOVES);
-        setOppName('');
+        // setOppName('');
         setSymbol('');
         setTimer(TIMER_SECS);
         setIntroModal(false);
@@ -380,7 +384,6 @@ export default function Home() {
         setIsMatchDone(false);
         setEnemyTimer(TIMER_SECS);
         setTimer(TIMER_SECS);
-        // setOppName('');
         setIsWin(null);
         setIntroModal(false);
       } else {
@@ -400,7 +403,7 @@ export default function Home() {
           open={isMatchDone} win={isWin}></GameResultModal>
         <AlertModal open={openAlertModal} clickExit={handleResultModalExit}></AlertModal>
 
-        <div className="max-w-4xl mx-auto m-0 border-x-2 p-3 h-screen relative overflow-hidden">
+        <div className="max-w-4xl mx-auto m-0 p-3 h-screen relative overflow-hidden">
           {isHost !== null &&
             (
               <div className="relative w-auto">
@@ -427,7 +430,7 @@ export default function Home() {
                     </div>
                     <TimerBar matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
 
-                    <div className="flex justify-end mt-1">{(oppName !== '' || oppName !== null) ? oppName : ' - '}</div>
+                    <div className="flex justify-end mt-1">{oppName || ' - '}</div>
                   </div>
 
 
