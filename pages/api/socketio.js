@@ -15,6 +15,13 @@ const Socketio = (req, res) => {
     ];
 
     let ROOMS = [];
+    let PLAYERS = [{
+        id: '',
+        name: '',
+        win: 0,
+        lose: 0,
+        draw: 0
+    }];
 
     res.status(200).json({ user: 'hazel' });
 
@@ -27,13 +34,16 @@ const Socketio = (req, res) => {
 
         io.on('connection', (socket) => {
 
+            // socket.onAny((event, ...args) => {
+            //     console.log(`got ${event}`);
+            //     setTimeout(() => {
+            //         adminGetRooms(io);
+            //     }, 1000);
+            // });
 
-            socket.onAny((event, ...args) => {
-                // console.log(`got ${event}`);
-                setTimeout(() => {
-                    adminGetRooms(io);
-                }, 1000);
-            });
+            socket.on('player-details', (data) => {
+                console.log(data);
+            })
 
             socket.on('enemy-timer', (data) => {
                 socket.to(data.room).emit('enemy-timer', { timer: data.timer });

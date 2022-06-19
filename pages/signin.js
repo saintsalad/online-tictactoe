@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AnimatePage from '../components/AnimatePage';
 import { getFromStorage, setToStorage } from '../helper/localStorage';
 import Router from "next/router";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Signin() {
 
@@ -21,6 +22,7 @@ export default function Signin() {
                 console.log('enter your name');
             } else {
                 setToStorage('player-name', name);
+                setToStorage('player-id', uuidv4())
                 Router.push('/');
             }
         }
@@ -29,9 +31,9 @@ export default function Signin() {
     return (
         <AnimatePage>
             <div className='signin grid place-items-center font-sans max-w-4xl mx-auto h-screen'>
-                <div className='form-container pt-9 pb-6 px-10 xs:px-8 xs:w-11/12 
+                <div className='pt-9 pb-6 px-10 xs:px-8 xs:w-11/12 
                 sm:w-10/12 w-7/12 md:7/12 rounded-md'>
-                    <div className='mb-2 font-medium '>
+                    <div className='mb-2 font-light text-lg'>
                         Enter your name
                     </div>
                     <div className='d-block'>
@@ -44,7 +46,7 @@ export default function Signin() {
                     </div>
 
                     <div className='footer d-block w-full flex xs:justify-center justify-end mt-5'>
-                        <button onClick={e => handleSubmit(e, 'click')} className='rounded-full xs:w-full px-7 py-2  bg-gradient-to-tl from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-0 focus:ring-offset-4 focus:ring-offset-transparent'>Submit</button>
+                        <button onClick={e => handleSubmit(e, 'click')} className='bg-gradient-shadow relative rounded-full xs:w-full px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39]'>Submit</button>
                     </div>
 
                 </div>

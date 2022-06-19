@@ -11,16 +11,19 @@ import TimerBar from "../components/TimerBar";
 
 export default function Home() {
 
-  const DEFAULT_MOVES = ['', '', '', '', '', '', '', '', ''];
+  const DEFAULT_MOVES = useRef(['', '', '', '', '', '', '', '', '']);
   const TIMER_SECS = 15.0;
   const [socket, setSocket] = useState(null);
+
+  const socketRef = useRef(null);
+
   const [myRoom, setMyRoom] = useState('');
   const [myName, setMyName] = useState('me');
   const [oppName, setOppName] = useState('unknown');
   const [isHost, setIsHost] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [symbol, setSymbol] = useState('');
-  const [moves, setMoves] = useState(DEFAULT_MOVES);
+  const [moves, setMoves] = useState(DEFAULT_MOVES.current);
   const [isMyTurn, setIsMyTurn] = useState(false);
   const [isMatchDone, setIsMatchDone] = useState(false);
   const [isWin, setIsWin] = useState(false);
@@ -35,8 +38,12 @@ export default function Home() {
   const [myWins, setMyWins] = useState(0);
   const [myLoses, setMyLoses] = useState(0);
   const [pauseMyInterval, setPauseMyInterval] = useState(false);
+  const [matchScore, setMatchScore] = useState({
+    me: 0, enemy: 0
+  })
 
   useEffect(() => {
+
     const getPlayerName = () => {
       if (typeof getFromStorage('player-name') === 'undefined' ||
         getFromStorage('player-name') === null ||
@@ -44,61 +51,91 @@ export default function Home() {
         Router.push('/signin');
       } else {
         setMyName(getFromStorage('player-name'));
+
+        // if (socket) {
+        //   socket.emit('player-details', {
+        //     id: getFromStorage('player-id'),
+        //     name: getFromStorage('player-name'),
+        //     type: 'initial'
+        //   });
+        // }
       }
     }
 
     fetch('/api/socketio').finally(() => {
-      const socket = io();
-      setSocket(socket);
+      const s = io();
+      setSocket(s);
+      socketRef.current = s;
     });
 
     getPlayerName();
   }, []);
 
 
+
+  // Move
   useEffect(() => {
 
-    if (socket) {
-      socket.on("connect", () => {
-        console.log('connected :', socket.connected); // true
-      });
-
-      socket.on('joined-room', (d) => {
-        setMyRoom(d.room)
-        setSymbol(d.isHost ? 'x' : 'circle');
-        setIsMyTurn(d.isHost);
-        if (!isRematch) {
-          setOppName(d.name);
-        }
-
-        setIsHost(d.isHost);
-
-        if (d.isHost) {
-          setIsLoading(true);
-          setIsReady(d.isReady);
-        } else {
-          setIsLoading(false);
-          setIntroModal(true);
-          mySetTimeout.current = setTimeout(() => {
-            setIsReady(d.isReady);
-            setIntroModal(false);
-          }, 5000);
-
-        }
-      });
-
-      socket.on('move', (d) => {
-        setPauseMyInterval(false);
-        setIsMyTurn(d.turn === symbol ? false : true);
-        setMoves(d.moves);
-      });
-
+    const callback = (d) => {
+      setPauseMyInterval(false);
+      setIsMyTurn(d.turn === symbol ? false : true);
+      setMoves(d.moves);
     }
-  }, [socket, symbol, isRematch]);
+
+    if (socket) {
+      socket.on('move', (d) => callback(d));
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('move', (d) => callback(d));
+      }
+    }
+  }, [socket, symbol]);
+
+
+  // Join Room 
+  useEffect(() => {
+
+    const callback = (d) => {
+      setMyRoom(d.room)
+      setSymbol(d.isHost ? 'x' : 'circle');
+      setIsMyTurn(d.isHost);
+      if (!isRematch) {
+        setOppName(d.name);
+      }
+
+      setIsHost(d.isHost);
+
+      if (d.isHost) {
+        setIsLoading(true);
+        setIsReady(d.isReady);
+      } else {
+        setIsLoading(false);
+        setIntroModal(true);
+        mySetTimeout.current = setTimeout(() => {
+          setIsReady(d.isReady);
+          setIntroModal(false);
+        }, 5000);
+      }
+    }
+
+    if (socket) {
+      socket.on('joined-room', (d) => callback(d));
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('joined-room', (d) => callbackJoinedRoom(d));
+      }
+    }
+
+  }, [socket, isRematch]);
 
   // For Game Ready Event
   useEffect(() => {
     const callback = (d) => {
+      setPauseMyInterval(false)
       setIsLoading(false);
 
       setIntroModal(true);
@@ -120,7 +157,7 @@ export default function Home() {
 
     return () => {
       if (socket) {
-        socket.off('game-ready', callback);
+        socket.off('game-ready', (d) => callback(d));
       }
     }
   }, [socket, isRematch, isLoading, oppName]);
@@ -166,17 +203,34 @@ export default function Home() {
   useEffect(() => {
     const callback = (d) => {
       if (d.result === 'done' && symbol) {
-        for (let index = 0; index < d.combination.length; index++) {
-          const el = document.getElementById('cell' + d.combination[index]);
-          el.classList.add(d.winner == symbol ? 'win' : 'lose');
+        for (let i = 0; i < 9; i++) {
+          const el = document.getElementById('cell' + i);
+          el.classList.add('lose');
+
+          for (let j = 0; j < d.combination.length; j++) {
+            if (i === d.combination[j]) {
+              el.classList.remove('lose');
+            }
+
+
+          }
         }
+
         setTimeout(() => {
           const iWin = d.winner == symbol ? true : false;
           setIsWin(iWin);
           if (iWin) {
+            setMatchScore(prevState => ({
+              me: prevState.me + 1,
+              enemy: prevState.enemy
+            }));
             setMyWins(w => w + 1);
-          } else {
-            setMyLoses(l => l + 1)
+          } else if (!iWin) {
+            setMatchScore(prevState => ({
+              me: prevState.me,
+              enemy: prevState.enemy + 1
+            }));
+            setMyLoses(l => l + 1);
           }
           setIsMatchDone(true);
         }, 200);
@@ -280,9 +334,19 @@ export default function Home() {
   // Opp exit the match event
   useEffect(() => {
     const callback = () => {
-      setOpenAlertModal(true);
       setIsMatchDone(false);
-      setIsReady(false);
+      // setIsReady(false);
+      setPauseMyInterval(true);
+      setIsWin(null);
+
+      socket.emit('exit-room', { room: myRoom }, (res) => {
+        if (res.status === 'ok') {
+          setTimeout(() => {
+            setOpenAlertModal(true);
+          }, 500);
+        }
+      })
+
     }
 
     if (socket) {
@@ -295,14 +359,22 @@ export default function Home() {
       }
     };
 
-  }, [socket, openAlertModal]);
+  }, [socket, openAlertModal, myRoom]);
 
 
   useEffect(() => {
+    const callback = (d) => {
+      setEnemyTimer(d.timer);
+    }
+
     if (socket) {
-      socket.on('enemy-timer', (d) => {
-        setEnemyTimer(d.timer);
-      })
+      socket.on('enemy-timer', (d) => callback(d));
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('enemy-timer', (d) => callback(d));
+      }
     }
   }, [socket])
 
@@ -339,12 +411,15 @@ export default function Home() {
     setIsReady(false);
     setIsMatchDone(false);
     setIsLoading(true);
+    setMatchScore({
+      me: 0, enemy: 0
+    });
     socket.emit('exit-room', { room: myRoom }, (res) => {
       if (res.status === 'ok') {
         setEnemyTimer(TIMER_SECS);
         setMyRoom('');
         setIsHost(null);
-        setMoves(DEFAULT_MOVES);
+        setMoves(DEFAULT_MOVES.current);
         // setOppName('');
         setSymbol('');
         setTimer(TIMER_SECS);
@@ -370,7 +445,7 @@ export default function Home() {
             setIsMatchDone(false);
             setIsReady(false);
             setIsLoading(!isRematch ? true : false);
-            setMoves(DEFAULT_MOVES);
+            setMoves(DEFAULT_MOVES.current);
             // setIsMyTurn(false);
             // setSymbol('');
           }
@@ -380,7 +455,7 @@ export default function Home() {
         clearTimeout(mySetTimeout.current);
         setIsLoading(true);
         setIsReady(false);
-        setMoves(DEFAULT_MOVES);
+        setMoves(DEFAULT_MOVES.current);
         setIsMatchDone(false);
         setEnemyTimer(TIMER_SECS);
         setTimer(TIMER_SECS);
@@ -403,34 +478,43 @@ export default function Home() {
           open={isMatchDone} win={isWin}></GameResultModal>
         <AlertModal open={openAlertModal} clickExit={handleResultModalExit}></AlertModal>
 
-        <div className="max-w-4xl mx-auto m-0 p-3 h-screen relative overflow-hidden">
+        <div className="max-w-4xl mx-auto m-0 p-3 h-screen relative overflow-hidden xs:overflow-auto">
           {isHost !== null &&
             (
               <div className="relative w-auto">
-                <div className={"w-auto flex justify-center " + (isMyTurn ? "" : "opacity-50")}>
+                <div className="w-auto flex justify-center">
 
-                  <div className="flex w-28 flex-col mr-10">
-                    <div className="player-cardjustify-start relative overflow-hidden h-12 w-[120px] rounded-sm flex">
-                      <div className={'symbol w-[40px] mr-2 h-full relative overflow-hidden flex justify-center items-center ' + symbol}></div>
-                      <div className="time-container min-w-[48px] text-3xl after:h-full items-center flex">
-                        <div>{timer}</div>
+                  <div className="flex items-center">
+                    <div className="mr-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.me}</div>
+
+                    <div className={"flex w-28 flex-col mr-10 " + (isMyTurn ? "" : "opacity-50")}>
+                      <div className="player-cardjustify-start relative overflow-hidden h-12 w-[120px] rounded-sm flex">
+                        <div className={'symbol w-[40px] mr-2 h-full relative overflow-hidden flex justify-center items-center ' + symbol}></div>
+                        <div className="time-container min-w-[48px] text-3xl after:h-full items-center flex">
+                          <div>{timer}</div>
+                        </div>
                       </div>
-                    </div>
-                    <TimerBar matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
+                      <TimerBar timer={timer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
 
-                    <div className="mt-1">{myName}</div>
+                      <div className="mt-1">{myName}</div>
+                    </div>
                   </div>
 
-                  <div className={"flex w-28 flex-col justify-end " + (!isMyTurn ? "" : "opacity-50")}>
-                    <div className="player-card justify-end relative overflow-hidden h-12 w-[120px] rounded-sm flex">
-                      <div className="time-container min-w-[48px] text-3xl h-full items-center justify-end flex">
-                        <div>{enemyTimer}</div>
-                      </div>
-                      <div className={'symbol w-[40px] ml-2 h-full relative overflow-hidden flex justify-center items-center ' + (symbol === 'x' ? 'circle' : 'x')}></div>
-                    </div>
-                    <TimerBar matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
 
-                    <div className="flex justify-end mt-1">{oppName || ' - '}</div>
+                  <div className="flex items-center">
+                    <div className={"flex w-28 flex-col justify-end  " + (!isMyTurn ? "" : "opacity-50")}>
+                      <div className="player-card justify-end relative overflow-hidden h-12 rounded-sm flex">
+                        <div className="time-container min-w-[48px] text-3xl h-full items-center justify-end flex">
+                          <div>{enemyTimer}</div>
+                        </div>
+                        <div className={'symbol w-[40px] ml-2 h-full relative overflow-hidden flex justify-center items-center ' + (symbol === 'x' ? 'circle' : 'x')}></div>
+                      </div>
+                      <TimerBar timer={enemyTimer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
+
+                      <div className="flex justify-end mt-1">{oppName || ' - '}</div>
+                    </div>
+
+                    <div className="ml-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.enemy}</div>
                   </div>
 
 
@@ -441,15 +525,81 @@ export default function Home() {
             )}
 
           {(!isReady && myRoom === '') &&
-            (<div className="flex flex-col w-full p-5">
-              <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tictactoe</div>
-              <div className="text-4xl xs:text-3xl font-light mt-9">For the culture.</div>
-              <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">Design and develop with love using ReactJS, NextJS, Socket.IO, and Tailwind. </div>
-              <button disabled={!socket}
-                id="findMatchBtn"
-                className="mt-14 rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-0 focus:ring-offset-4 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                onClick={handleJoinRoom}>Find Match</button>
-            </div>)
+            (
+              <div className="flex xs:flex-col">
+                <div className="flex flex-col w-full p-5">
+                  <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tictactoe</div>
+                  <div className="text-4xl xs:text-3xl font-light mt-9">For the culture.</div>
+                  <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">Design and develop with love using ReactJS, NextJS, Socket.IO, and Tailwind. </div>
+                  <div className="flex mt-14">
+                    <button disabled={!socket}
+                      id="findMatchBtn"
+                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
+                      onClick={handleJoinRoom}>Find Match</button>
+                  </div>
+
+                </div>
+
+                <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:justify-center">
+                  <div id="online-players-container" className="flex items-center h-10 w-full">
+                    <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
+                    <div className="text-sm font-light"><span className="font-semibold mr-1">24</span>
+                      Online Player/s</div>
+                  </div>
+
+                  <div className="grid  gap-4 grid-cols-2">
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#F7B12D] p-3 rounded-md h-20 w-28">
+                      <div className="text-xs">Total Match</div>
+                      <div className="font-semibold text-2xl">24</div>
+                    </div>
+
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FA8247] p-3 rounded-md h-20 w-28">
+                      <div className="text-xs">Win Rate</div>
+                      <div className="font-semibold text-2xl">98.10%</div>
+                    </div>
+
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md h-20 w-28">
+                      <div className="text-xs">Draw</div>
+                      <div className="font-semibold text-2xl">0</div>
+                    </div>
+
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md h-20 w-28">
+                      <div className="text-xs">Lost</div>
+                      <div className="font-semibold text-2xl">2</div>
+                    </div>
+
+                    {/* <div id="total-matches-container" className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md">
+                      <div className="text-xs">Rank Points</div>
+                      <div className="font-semibold text-2xl text-right">1050</div>
+                    </div>
+
+                    <div id="total-matches-container" className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md">
+                      <div className="text-xs mb-2">Top 5</div>
+                      {
+                        [{ n: 'Cale', rp: '2000' }, { n: 'Hazel', rp: '1950' }].map((item, i) => {
+                          return (
+                            <>
+                              <div className="top-player border-b text-sm my-1 px-2 py-1 rounded-sm flex justify-between">
+                                <span>
+                                  <span className="font-mono mr-1">{i + 1}.</span>
+                                  {item.n}
+                                </span>
+                                <span className="font-medium">{item.rp} RP</span>
+                              </div>
+                            </>
+                          )
+                        })
+                      }
+
+                    </div> */}
+
+                  </div>
+
+
+                </div>
+              </div>
+
+            )
           }
           {(isReady && !isLoading && myRoom !== '') && (
             <div style={{ pointerEvents: (isMyTurn ? 'auto' : 'none') }}
@@ -462,7 +612,7 @@ export default function Home() {
             </div>
           )}
           {(!isReady && isLoading) && (
-            <div className="justify-center flex flex-col items-center relative h-full pb-24">
+            <div className="justify-center flex flex-col items-center relative h-full pb-40 xs:pb-52">
               <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
               <span className="loader"></span>
             </div>

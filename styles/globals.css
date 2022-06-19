@@ -244,27 +244,15 @@ body {
   display: flex;
 }
 
-.cell.x.win::before,
-.cell.x.win::after {
-  background-color: #12EB90;
-  transition: 1s ease-in;
-}
-
-.cell.circle.win::before {
-  background-color: #12EB90;
-  transition: 1s ease-in;
-}
-
-
 .cell.x.lose::before,
 .cell.x.lose::after {
-  background-color: rgb(255, 101, 101);
-  transition: 1s ease-in;
+  background-color: #53546c;
+  transition: 1s ease-in-out;
 }
 
 .cell.circle.lose::before {
-  background-color: rgb(255, 101, 101);
-  transition: 1s ease-in;
+  background: #53546c;
+  transition: 1s ease-in-out;
 }
 
 .loader {
@@ -292,4 +280,23 @@ body {
 .signin .form-container {
   background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
+}
+
+.bg-gradient-shadow:before {
+  content: "";
+  z-index: -1;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: inherit;
+  transform: translateY(3px) scale(0.75);
+  filter: blur(20px);
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+.bg-gradient-shadow:hover::before {
+  opacity: 0.85;
 }

@@ -79,7 +79,7 @@ export default function GameResultModal(props) {
             return comp;
         } else {
             comp.push(
-                <div key={uuidv4()} className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-gray-50 sm:mx-0 sm:h-10 sm:w-10">
+                <div key={uuidv4()} className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-transparent sm:mx-0 sm:h-10 sm:w-10">
                 </div>);
             return comp;
         }
@@ -92,10 +92,10 @@ export default function GameResultModal(props) {
                 <div className="xs:flex items-center justify-center min-h-screen px-4 text-center block p-0">
                     <Transition.Child
                         as={Fragment}
-                        enter="ease-out duration-1000"
+                        enter="ease-in duration-800"
                         enterFrom="opacity-0"
                         enterTo="opacity-100"
-                        leave="ease-in duration-1000"
+                        leave="ease-out duration-800"
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
@@ -134,7 +134,7 @@ export default function GameResultModal(props) {
                             <div className="bg-transparent px-4 py-3 xs:flex xs:flex-row-reverse sm:flex-row-reverse sm:px-6 sm:flex md:flex-row-reverse md:px-6 md:flex lg:flex-row-reverse lg:px-6 lg:flex xs:justify-center">
                                 <button
                                     type="button"
-                                    className="inline-flex justify-center rounded-md border-0 shadow-sm h-fit p-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-80 focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] sm:ml-3 sm:w-auto md:ml-3 md:w-auto lg:ml-3 lg:w-auto " title='Play Again'
+                                    className="inline-flex bg-gradient-shadow relative justify-center rounded-md border-0 shadow-sm h-fit p-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-80 focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] sm:ml-3 sm:w-auto md:ml-3 md:w-auto lg:ml-3 lg:w-auto " title='Play Again'
                                     onClick={() => playAgain()}>
                                     <RefreshIcon className="h-7 w-7 text-white text-opacity-90" aria-hidden="true" />
                                 </button>
