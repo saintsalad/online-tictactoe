@@ -11,12 +11,11 @@ import TimerBar from "../components/TimerBar";
 
 export default function Home() {
 
+  const [onlinePlayers, setOnlinePlayers] = useState(0);
+
   const DEFAULT_MOVES = useRef(['', '', '', '', '', '', '', '', '']);
   const TIMER_SECS = 15.0;
   const [socket, setSocket] = useState(null);
-
-  const socketRef = useRef(null);
-
   const [myRoom, setMyRoom] = useState('');
   const [myName, setMyName] = useState('me');
   const [oppName, setOppName] = useState('unknown');
@@ -51,21 +50,12 @@ export default function Home() {
         Router.push('/signin');
       } else {
         setMyName(getFromStorage('player-name'));
-
-        // if (socket) {
-        //   socket.emit('player-details', {
-        //     id: getFromStorage('player-id'),
-        //     name: getFromStorage('player-name'),
-        //     type: 'initial'
-        //   });
-        // }
       }
     }
 
     fetch('/api/socketio').finally(() => {
       const s = io();
       setSocket(s);
-      socketRef.current = s;
     });
 
     getPlayerName();
@@ -368,6 +358,16 @@ export default function Home() {
     }
 
     if (socket) {
+      socket.emit('player-details', {
+        id: getFromStorage('player-id'),
+        name: getFromStorage('player-name'),
+        type: 'initial'
+      });
+
+      socket.on('server-data', (d) => {
+        setOnlinePlayers(d.onlinePlayers);
+      })
+
       socket.on('enemy-timer', (d) => callback(d));
     }
 
@@ -376,7 +376,7 @@ export default function Home() {
         socket.off('enemy-timer', (d) => callback(d));
       }
     }
-  }, [socket])
+  }, [socket]);
 
   const handleJoinRoom = (isPlayAgain = false) => {
     if (socket.connected) {
@@ -543,7 +543,7 @@ export default function Home() {
                 <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:justify-center">
                   <div id="online-players-container" className="flex items-center h-10 w-full">
                     <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
-                    <div className="text-sm font-light"><span className="font-semibold mr-1">24</span>
+                    <div className="text-sm font-light"><span className="font-semibold mr-1">{onlinePlayers}</span>
                       Online Player/s</div>
                   </div>
 

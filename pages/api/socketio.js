@@ -15,13 +15,7 @@ const Socketio = (req, res) => {
     ];
 
     let ROOMS = [];
-    let PLAYERS = [{
-        id: '',
-        name: '',
-        win: 0,
-        lose: 0,
-        draw: 0
-    }];
+    let PLAYERS = [];
 
     res.status(200).json({ user: 'hazel' });
 
@@ -32,18 +26,68 @@ const Socketio = (req, res) => {
 
         // SOCKET IOs
 
+        const getUniqueListBy = (arr, key) => {
+            return [...new Map(arr.map(item => [item[key], item])).values()]
+        }
+
+        const isPlayerExist = (obj) => {
+            for (let i = 0; i < PLAYERS.length; i++) {
+                if (PLAYERS[i].id === obj.id && PLAYERS[i].name === obj.name) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
         io.on('connection', (socket) => {
 
-            // socket.onAny((event, ...args) => {
-            //     console.log(`got ${event}`);
-            //     setTimeout(() => {
-            //         adminGetRooms(io);
-            //     }, 1000);
-            // });
+            const emitserverData = () => {
+                io.emit('server-data', {
+                    onlinePlayers: PLAYERS.filter(p => {
+                        if (p.status === 'online' && socket.id !== p.socketId) {
+                            return true;
+                        }
 
-            socket.on('player-details', (data) => {
-                console.log(data);
-            })
+                        return false
+                    }).length
+                })
+            }
+
+            socket.onAny((event, args) => {
+
+                if (event === 'player-details') {
+                    if (args.type === 'initial') {
+                        const obj = {
+                            socketId: socket.id,
+                            id: args.id,
+                            name: args.name,
+                            win: 0,
+                            lose: 0,
+                            draw: 0,
+                            status: 'online'
+                        };
+
+                        if (!isPlayerExist(obj)) {
+                            PLAYERS.push(obj);
+                        } else {
+                            const objIndex = PLAYERS.findIndex(obj => obj.id === args.id);
+                            PLAYERS[objIndex].status = 'online';
+                            PLAYERS[objIndex].socketId = socket.id;
+                        }
+                    }
+                }
+                // setTimeout(() => {
+                //     adminGetRooms(io);
+                // }, 1000);
+
+                emitserverData();
+            });
+
+            // socket.on('player-details', (data) => {
+            //     console.log(data);
+            // })
 
             socket.on('enemy-timer', (data) => {
                 socket.to(data.room).emit('enemy-timer', { timer: data.timer });
@@ -54,9 +98,16 @@ const Socketio = (req, res) => {
                 socket.leave(room);
                 socket.to(room).emit('enemy-disconnect', {});
 
+                // set the player to offline
+                const objIndex = PLAYERS.findIndex(obj => obj.socketId === socket.id);
+                if (objIndex >= 0) {
+                    PLAYERS[objIndex].status = 'offline';
+                    PLAYERS[objIndex].socketId = '';
+                }
+
                 // remove room/s that belongs to someone disconnected
                 ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
-                console.log('disconnect')
+                emitserverData();
             });
 
             socket.on('exit-room', (data, callback) => {
