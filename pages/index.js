@@ -4,14 +4,16 @@ import { v4 as uuidv4 } from 'uuid';
 import AlertModal from "../components/AlertModal";
 import GameResultModal from '../components/GameResultModal';
 import GameStartIntroModal from "../components/GameStartIntroModal";
-import { getFromStorage } from '../helper/localStorage';
-import Router from "next/router";
+import { getFromStorage, setToStorage } from '../helper/localStorage';
+import Router, { useRouter } from "next/router";
 import AnimatePage from '../components/AnimatePage';
 import TimerBar from "../components/TimerBar";
+import useNoInitialEffect from "../helper/UseNoInitialEffect";
 
 export default function Home() {
 
   const [onlinePlayers, setOnlinePlayers] = useState(0);
+  const [locationKeys, setLocationKeys] = useState([]);
 
   const DEFAULT_MOVES = useRef(['', '', '', '', '', '', '', '', '']);
   const TIMER_SECS = 15.0;
@@ -34,15 +36,22 @@ export default function Home() {
   const [openAlertModal, setOpenAlertModal] = useState(false);
   const mySetTimeout = useRef(setTimeout);
   const [enemyTimer, setEnemyTimer] = useState(TIMER_SECS);
-  const [myWins, setMyWins] = useState(0);
-  const [myLoses, setMyLoses] = useState(0);
+  const [myRecords, setMyRecords] = useState({
+    wins: 0,
+    loses: 0,
+    draws: 0,
+    total: 0,
+    winRate: 0
+  });
   const [pauseMyInterval, setPauseMyInterval] = useState(false);
   const [matchScore, setMatchScore] = useState({
     me: 0, enemy: 0
-  })
+  });
+  const didMount = useRef(false);
 
   useEffect(() => {
 
+    didMount.current = true;
     const getPlayerName = () => {
       if (typeof getFromStorage('player-name') === 'undefined' ||
         getFromStorage('player-name') === null ||
@@ -50,6 +59,8 @@ export default function Home() {
         Router.push('/signin');
       } else {
         setMyName(getFromStorage('player-name'));
+        const record = JSON.parse(getFromStorage('player-record'));
+        setMyRecords(record);
       }
     }
 
@@ -57,6 +68,18 @@ export default function Home() {
       const s = io();
       setSocket(s);
     });
+
+    // Broadcast that you're opening a page.
+    localStorage.openpages = Date.now();
+    window.addEventListener('storage', function (e) {
+      if (e.key == "openpages") {
+        // Listen if anybody else is opening the same page!
+        localStorage.page_available = Date.now();
+      }
+      if (e.key == "page_available") {
+        Router.push('/admonition');
+      }
+    }, false);
 
     getPlayerName();
   }, []);
@@ -214,26 +237,34 @@ export default function Home() {
               me: prevState.me + 1,
               enemy: prevState.enemy
             }));
-            setMyWins(w => w + 1);
+            setMyRecords(d => ({ ...d, wins: d.wins + 1 }));
           } else if (!iWin) {
             setMatchScore(prevState => ({
               me: prevState.me,
               enemy: prevState.enemy + 1
             }));
-            setMyLoses(l => l + 1);
+            setMyRecords(d => ({ ...d, loses: d.loses + 1 }));
           }
           setIsMatchDone(true);
         }, 200);
 
       } else if (d.result === 'draw') {
+        setMyRecords(d => ({ ...d, draws: d.draws + 1 }));
         setTimeout(() => {
           setIsWin(null);
           setIsMatchDone(true);
         }, 200);
       } else if (d.result === 'timesup' && symbol) {
 
+        const isWin = d.winner == symbol ? true : false
+        if (isWin) {
+          setMyRecords(d => ({ ...d, wins: d.wins + 1 }));
+        } else {
+          setMyRecords(d => ({ ...d, loses: d.loses + 1 }));
+        }
+
         setTimeout(() => {
-          setIsWin(d.winner == symbol ? true : false);
+          setIsWin(isWin);
           setIsMatchDone(true);
         }, 200);
       }
@@ -351,7 +382,6 @@ export default function Home() {
 
   }, [socket, openAlertModal, myRoom]);
 
-
   useEffect(() => {
     const callback = (d) => {
       setEnemyTimer(d.timer);
@@ -363,11 +393,6 @@ export default function Home() {
         name: getFromStorage('player-name'),
         type: 'initial'
       });
-
-      socket.on('server-data', (d) => {
-        setOnlinePlayers(d.onlinePlayers);
-      })
-
       socket.on('enemy-timer', (d) => callback(d));
     }
 
@@ -377,6 +402,64 @@ export default function Home() {
       }
     }
   }, [socket]);
+
+  useEffect(() => {
+
+    const callback = (d) => {
+      setOnlinePlayers(d.onlinePlayers);
+      console.log('online')
+    }
+
+    if (socket) {
+      socket.on('server-data', (d) => callback(d));
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('server-data', (d) => callback(d));
+      }
+    }
+
+  }, [socket]);
+
+  useEffect(() => {
+    const total = myRecords.wins + myRecords.loses + myRecords.draws;
+    setMyRecords(d => ({
+      ...d,
+      total: total
+    }));
+
+    // setToStorage('player-record')
+
+
+  }, [myRecords.wins, myRecords.loses, myRecords.draws])
+
+  useNoInitialEffect(() => {
+    setToStorage('player-record', JSON.stringify(myRecords));
+  }, [myRecords]);
+
+
+  const router = useRouter();
+  useEffect(() => {
+    router.beforePopState(({ as }) => {
+      if (as !== router.asPath) {
+        // Will run when leaving the current page; on back/forward actions
+        // Add your logic here, like toggling the modal state
+        if (isReady && !isMatchDone) {
+          handleResultModalExit();
+        } else if (isReady && isMatchDone) {
+          handleResultModalExit();
+        }
+      }
+      return true;
+    });
+
+    return () => {
+      router.beforePopState(() => true);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, isReady, isMatchDone]);
 
   const handleJoinRoom = (isPlayAgain = false) => {
     if (socket.connected) {
@@ -496,7 +579,7 @@ export default function Home() {
                       </div>
                       <TimerBar timer={timer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
 
-                      <div className="mt-1">{myName}</div>
+                      <div className="mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{myName}</div>
                     </div>
                   </div>
 
@@ -511,7 +594,7 @@ export default function Home() {
                       </div>
                       <TimerBar timer={enemyTimer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
 
-                      <div className="flex justify-end mt-1">{oppName || ' - '}</div>
+                      <div className="flex justify-end mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{oppName || ' - '}</div>
                     </div>
 
                     <div className="ml-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.enemy}</div>
@@ -529,9 +612,9 @@ export default function Home() {
               <div className="flex xs:flex-col">
                 <div className="flex flex-col w-full p-5">
                   <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tictactoe</div>
-                  <div className="text-4xl xs:text-3xl font-light mt-9">For the culture.</div>
-                  <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">Design and develop with love using ReactJS, NextJS, Socket.IO, and Tailwind. </div>
-                  <div className="flex mt-14">
+                  <div className="text-4xl xs:text-3xl font-light mt-9">Wassup, {myName}!</div>
+                  <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">This project is designed and developed using <b>ReactJS</b>, <b>NextJS</b>, <b>Socket.IO</b>, and <b>Tailwind</b>.</div>
+                  <div className="flex mt-12">
                     <button disabled={!socket}
                       id="findMatchBtn"
                       className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
@@ -540,7 +623,7 @@ export default function Home() {
 
                 </div>
 
-                <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:justify-center">
+                <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:pt-7">
                   <div id="online-players-container" className="flex items-center h-10 w-full">
                     <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
                     <div className="text-sm font-light"><span className="font-semibold mr-1">{onlinePlayers}</span>
@@ -548,24 +631,24 @@ export default function Home() {
                   </div>
 
                   <div className="grid  gap-4 grid-cols-2">
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#F7B12D] p-3 rounded-md h-20 w-28">
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#EA0599] p-3 rounded-md h-20 w-28">
                       <div className="text-xs">Total Match</div>
-                      <div className="font-semibold text-2xl">24</div>
+                      <div className="font-semibold text-2xl">{myRecords.total}</div>
                     </div>
 
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FA8247] p-3 rounded-md h-20 w-28">
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#9A0F98] p-3 rounded-md h-20 w-28">
                       <div className="text-xs">Win Rate</div>
-                      <div className="font-semibold text-2xl">98.10%</div>
+                      <div className="font-semibold text-xl">{(myRecords.total > 0 ? (myRecords.wins + 0.5 * myRecords.draws) / myRecords.total * 100 : 0).toFixed(2)}%</div>
                     </div>
 
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md h-20 w-28">
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#6A0572] p-3 rounded-md h-20 w-28">
                       <div className="text-xs">Draw</div>
-                      <div className="font-semibold text-2xl">0</div>
+                      <div className="font-semibold text-2xl">{myRecords.draws}</div>
                     </div>
 
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md h-20 w-28">
-                      <div className="text-xs">Lost</div>
-                      <div className="font-semibold text-2xl">2</div>
+                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#39065A] p-3 rounded-md h-20 w-28">
+                      <div className="text-xs">Lose</div>
+                      <div className="font-semibold text-2xl">{myRecords.loses}</div>
                     </div>
 
                     {/* <div id="total-matches-container" className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md">

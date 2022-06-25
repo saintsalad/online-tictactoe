@@ -46,7 +46,7 @@ const Socketio = (req, res) => {
             const emitserverData = () => {
                 io.emit('server-data', {
                     onlinePlayers: PLAYERS.filter(p => {
-                        if (p.status === 'online' && socket.id !== p.socketId) {
+                        if (p.status === 'online') {
                             return true;
                         }
 
@@ -78,9 +78,6 @@ const Socketio = (req, res) => {
                         }
                     }
                 }
-                // setTimeout(() => {
-                //     adminGetRooms(io);
-                // }, 1000);
 
                 emitserverData();
             });
@@ -96,7 +93,8 @@ const Socketio = (req, res) => {
             socket.on('disconnecting', () => {
                 const room = Array.from(socket.rooms)[1];
                 socket.leave(room);
-                socket.to(room).emit('enemy-disconnect', {});
+                // socket.to(room).emit('enemy-disconnect', {});
+                socket.to(room).emit('exit-room', {});
 
                 // set the player to offline
                 const objIndex = PLAYERS.findIndex(obj => obj.socketId === socket.id);

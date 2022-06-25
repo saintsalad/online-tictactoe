@@ -17,8 +17,8 @@
     "@heroicons/react": "^1.0.6",
     "@types/express": "^4.17.13",
     "framer-motion": "^6.3.10",
-    "next": "12.1.0",
-    "react-dom": "17.0.2",
+    "next": "^12.1.6",
+    "react-dom": "^18.2.0",
     "socket.io": "^4.0.1",
     "socket.io-client": "^4.4.1",
     "uuidv4": "^6.2.13"
@@ -28,7 +28,7 @@
     "eslint": "8.11.0",
     "eslint-config-next": "12.1.0",
     "postcss": "^8.4.12",
-    "react": "^17.0.2",
+    "react": "^18.2.0",
     "tailwindcss": "^3.0.24"
   }
 }
