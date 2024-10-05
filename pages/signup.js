@@ -4,19 +4,12 @@ import { getFromStorage, setToStorage } from '../helper/localStorage';
 import Router from "next/router";
 import { v4 as uuidv4 } from 'uuid';
 
-export default function Signin() {
+export default function Signup() {
 
-    const [myName, setMyName] = useState('');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('')
     const [cpass, reEnter] = useState('')
-    const [record, setMyRecords] = useState({
-    wins: 0,
-    loses: 0,
-    draws: 0,
-    total: 0,
-    winRate: 0
-  });
+    const [myName, setMyName] = useState('');
 
     useEffect(() => {
         // if (!(typeof getFromStorage('player-name') === 'undefined' ||
@@ -24,33 +17,46 @@ export default function Signin() {
         //     getFromStorage('player-name') === '')) {
         //     Router.push('/');
         // }
-        // if(())
     }, []);
 
-    const handleSubmit = (event, action = '') => {
+    const handleSubmit = (event, action = '') => { //if username exist suggest to sign in instead
         if (event.key === 'Enter' || action === 'click') {
             if (!name.replace(/\s/g, '').length || name === '' || password === '') {
                 if(name === '' && password === '' && cpass === '')
                     alert('Can\'t leave all boxes blank!')
                 else if(password === '')
                     alert('Please enter your password')
+                else if (cpass === '')
+                    alert('Please re-enter your password')
                 else
                     alert('Please enter your username')
             }
-            else if (typeof getFromStorage('name') === 'undefined' ||
-                getFromStorage('name') === null ||
-                getFromStorage('name') === '') {
-                    alert('Username doesn\'t exist')
-            }
-            else{
-                if(name === getFromStorage('player-name') && password === getFromStorage('password'))
-                {
-                    setMyName(getFromStorage('player-name'));
-                    const record = JSON.parse(getFromStorage('player-record'));
-                    setMyRecords(record);
+            else if (name.length > 20 || name.length < 4)
+                alert('Please enter a username from 4 - 20 characters.')
+            // else if (!typeof getFromStorage('name') === 'undefined' ||
+            // getFromStorage('name') === null ||
+            // getFromStorage('name') === '') {
+            //     alert('Username already exists')
+            // }
+            else if(password.length < 4 || password.length > 20)
+                alert('Please enter a password from 4 - 20 characters.')
+            else if(cpass !== password)
+                alert('Passwords do not match!')
+            else {
+                setToStorage('player-name', name);
+                setToStorage('player-password',password);
+                setToStorage('player-id', uuidv4());
+                const record = {
+                    wins: 0,
+                    loses: 0,
+                    draws: 0,
+                    total: 0,
+                    winRate: 0
                 }
+                setMyName(getFromStorage('player-name'));
+                setToStorage('player-record', JSON.stringify(record)) // edit this to set player in database
+                Router.push('/');
             }
-            Router.push('/');
         }
     }
 
@@ -82,6 +88,19 @@ export default function Signin() {
                             className='text-black font-medium w-full p-2 rounded-sm'
                             onKeyPress={e => handleSubmit(e)}
                             onChange={e => setPassword(e.target.value)} 
+                        />
+                    </div>
+
+                    <div className='mb-2 font-light text-lg'>
+                        Re-enter your password
+                    </div>
+                    <div className='d-block'>
+                        <input
+                            type='password'
+                            placeholder="Re-enter your password" required
+                            className='text-black font-medium w-full p-2 rounded-sm'
+                            onKeyPress={e => handleSubmit(e)}
+                            onChange={e => reEnter(e.target.value)} 
                         />
                     </div>
 

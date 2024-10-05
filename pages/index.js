@@ -19,7 +19,7 @@ export default function Home() {
   const TIMER_SECS = 15.0;
   const [socket, setSocket] = useState(null);
   const [myRoom, setMyRoom] = useState('');
-  const [myName, setMyName] = useState('me');
+  const [myName, setMyName] = useState('guest');
   const [oppName, setOppName] = useState('unknown');
   const [isHost, setIsHost] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -52,17 +52,22 @@ export default function Home() {
   useEffect(() => {
 
     didMount.current = true;
-    const getPlayerName = () => {
-      if (typeof getFromStorage('player-name') === 'undefined' ||
-        getFromStorage('player-name') === null ||
-        getFromStorage('player-name') === '') {
-        Router.push('/signin');
-      } else {
-        setMyName(getFromStorage('player-name'));
-        const record = JSON.parse(getFromStorage('player-record'));
-        setMyRecords(record);
-      }
-    }
+/////
+
+    // const getPlayerName = () => { //if player doesnt exist => sign up else signin
+    //   if (typeof getFromStorage('player-name') === 'undefined' ||
+    //     getFromStorage('player-name') === null ||
+    //     getFromStorage('player-name') === '') {
+    //     Router.push('/signup');
+    //   } else {
+    //     setMyName(getFromStorage('player-name'));
+    //     const record = JSON.parse(getFromStorage('player-record'));
+    //     setMyRecords(record);
+    //     //Router.push('/signin');
+    //   }
+    // }
+
+    /////
 
     fetch('/api/socketio').finally(() => {
       const s = io();
@@ -81,7 +86,7 @@ export default function Home() {
       }
     }, false);
 
-    getPlayerName();
+    //getPlayerName();
   }, []);
 
 
@@ -472,6 +477,13 @@ export default function Home() {
       }
     }
   }
+  const signUp = () => {
+    Router.push('/signup')
+  } 
+
+  const signIn = () => {
+    Router.push('/signin')
+  }
 
   const handleCellClick = (i) => {
     setPauseMyInterval(true);
@@ -611,14 +623,25 @@ export default function Home() {
             (
               <div className="flex xs:flex-col">
                 <div className="flex flex-col w-full p-5">
-                  <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tictactoe</div>
-                  <div className="text-4xl xs:text-3xl font-light mt-9">Wassup, {myName}!</div>
-                  <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">This project is designed and developed using <b>ReactJS</b>, <b>NextJS</b>, <b>Socket.IO</b>, and <b>Tailwind</b>.</div>
-                  <div className="flex mt-12">
+                  <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tic-tac-toe</div>
+                  <div className="text-4xl xs:text-3xl font-light mt-9">Welcome, {myName}!</div>
+                  {/* <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">This project is designed and developed using <b>ReactJS</b>, <b>NextJS</b>, <b>Socket.IO</b>, and <b>Tailwind</b>.</div> */}
+                  <div className="flex mt-12 space-x-2">
                     <button disabled={!socket}
                       id="findMatchBtn"
                       className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
                       onClick={handleJoinRoom}>Find Match</button>
+
+                    <button disabled={!socket}
+                      id="signin"
+                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
+                      onClick={signIn}>Sign in</button>
+
+                    <button disabled={!socket}
+                      id="signup"
+                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
+                      onClick={signUp}>Sign up</button>
+
                   </div>
 
                 </div>
