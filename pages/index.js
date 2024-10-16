@@ -9,9 +9,13 @@ import Router, { useRouter } from "next/router";
 import AnimatePage from '../components/AnimatePage';
 import TimerBar from "../components/TimerBar";
 import useNoInitialEffect from "../helper/UseNoInitialEffect";
+import {signOut, useSession} from "next-auth/react";
+import PlayerStats from "../components/PlayerStats";
 
-export default function Home() {
-
+export default function Home() { 
+  const { data: session } = useSession()
+  const userName = session?.user?.username || 'Guest';
+  
   const [onlinePlayers, setOnlinePlayers] = useState(0);
   const [locationKeys, setLocationKeys] = useState([]);
 
@@ -19,7 +23,6 @@ export default function Home() {
   const TIMER_SECS = 15.0;
   const [socket, setSocket] = useState(null);
   const [myRoom, setMyRoom] = useState('');
-  const [myName, setMyName] = useState('guest');
   const [oppName, setOppName] = useState('unknown');
   const [isHost, setIsHost] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -442,8 +445,7 @@ export default function Home() {
   useNoInitialEffect(() => {
     setToStorage('player-record', JSON.stringify(myRecords));
   }, [myRecords]);
-
-
+  
   const router = useRouter();
   useEffect(() => {
     router.beforePopState(({ as }) => {
@@ -471,15 +473,12 @@ export default function Home() {
 
       if (isPlayAgain) {
         setIsMatchDone(false);
-        socket.emit('join-room', { id: socket.id, name: myName, room: myRoom });
+        socket.emit('join-room', { id: socket.id, name: userName, room: myRoom });
       } else {
-        socket.emit('join-room', { id: socket.id, name: myName, room: '' });
+        socket.emit('join-room', { id: socket.id, name: userName, room: '' });
       }
     }
   }
-  const signUp = () => {
-    Router.push('/signup')
-  } 
 
   const signIn = () => {
     Router.push('/signin')
@@ -562,8 +561,13 @@ export default function Home() {
     }
 
   }
-
-
+  function signOutUser() {
+    signOut({
+      redirect: true,
+      callbackUrl: `${window.location.origin}/`,
+    });
+  }
+  
   return (
     <AnimatePage>
       <div className="app font-sans relative">
@@ -590,8 +594,7 @@ export default function Home() {
                         </div>
                       </div>
                       <TimerBar timer={timer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
-
-                      <div className="mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{myName}</div>
+                      <div className="mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{userName}</div>
                     </div>
                   </div>
 
@@ -624,104 +627,54 @@ export default function Home() {
               <div className="flex xs:flex-col">
                 <div className="flex flex-col w-full p-5">
                   <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tic-tac-toe</div>
-                  <div className="text-4xl xs:text-3xl font-light mt-9">Welcome, {myName}!</div>
-                  {/* <div className="mt-3 xs:text-sm max-w-lg xs:max-w-xs">This project is designed and developed using <b>ReactJS</b>, <b>NextJS</b>, <b>Socket.IO</b>, and <b>Tailwind</b>.</div> */}
+                  <div className="text-4xl xs:text-3xl font-light mt-9">Welcome, {userName}!</div>
                   <div className="flex mt-12 space-x-2">
                     <button disabled={!socket}
                       id="findMatchBtn"
                       className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
                       onClick={handleJoinRoom}>Find Match</button>
-
-                    <button disabled={!socket}
-                      id="signin"
-                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                      onClick={signIn}>Sign in</button>
-
-                    <button disabled={!socket}
-                      id="signup"
-                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                      onClick={signUp}>Sign up</button>
-
+                    {session?.user? (
+                        <button disabled={!socket}
+                                id="signout"
+                                className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
+                                onClick={signOutUser}>Sign out</button>
+                    ) : (
+                      <button disabled={!socket}
+                        id="signin"
+                        className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
+                        onClick={signIn}>Sign in</button>
+                        )
+                    }
                   </div>
-
                 </div>
-
                 <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:pt-7">
                   <div id="online-players-container" className="flex items-center h-10 w-full">
                     <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
                     <div className="text-sm font-light"><span className="font-semibold mr-1">{onlinePlayers}</span>
-                      Online Player/s</div>
+                      Online Player/s
+                    </div>
                   </div>
-
-                  <div className="grid  gap-4 grid-cols-2">
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#EA0599] p-3 rounded-md h-20 w-28">
-                      <div className="text-xs">Total Match</div>
-                      <div className="font-semibold text-2xl">{myRecords.total}</div>
-                    </div>
-
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#9A0F98] p-3 rounded-md h-20 w-28">
-                      <div className="text-xs">Win Rate</div>
-                      <div className="font-semibold text-xl">{(myRecords.total > 0 ? (myRecords.wins + 0.5 * myRecords.draws) / myRecords.total * 100 : 0).toFixed(2)}%</div>
-                    </div>
-
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#6A0572] p-3 rounded-md h-20 w-28">
-                      <div className="text-xs">Draw</div>
-                      <div className="font-semibold text-2xl">{myRecords.draws}</div>
-                    </div>
-
-                    <div id="total-matches-container" className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#39065A] p-3 rounded-md h-20 w-28">
-                      <div className="text-xs">Lose</div>
-                      <div className="font-semibold text-2xl">{myRecords.loses}</div>
-                    </div>
-
-                    {/* <div id="total-matches-container" className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md">
-                      <div className="text-xs">Rank Points</div>
-                      <div className="font-semibold text-2xl text-right">1050</div>
-                    </div>
-
-                    <div id="total-matches-container" className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md">
-                      <div className="text-xs mb-2">Top 5</div>
-                      {
-                        [{ n: 'Cale', rp: '2000' }, { n: 'Hazel', rp: '1950' }].map((item, i) => {
-                          return (
-                            <>
-                              <div className="top-player border-b text-sm my-1 px-2 py-1 rounded-sm flex justify-between">
-                                <span>
-                                  <span className="font-mono mr-1">{i + 1}.</span>
-                                  {item.n}
-                                </span>
-                                <span className="font-medium">{item.rp} RP</span>
-                              </div>
-                            </>
-                          )
-                        })
-                      }
-
-                    </div> */}
-
+                    <PlayerStats/>
                   </div>
-
-
                 </div>
-              </div>
 
             )
           }
           {(isReady && !isLoading && myRoom !== '') && (
-            <div style={{ pointerEvents: (isMyTurn ? 'auto' : 'none') }}
-              className={'board ' + (isMyTurn ? symbol : '')} id='board'>
-              {moves.map((cell, i) => (
-                <div className={'cell ' + cell}
-                  onClick={() => handleCellClick(i)} data-cell
-                  key={i + cell} index={i} id={'cell' + i}> </div>
-              ))}
-            </div>
+              <div style={{pointerEvents: (isMyTurn ? 'auto' : 'none')}}
+                   className={'board ' + (isMyTurn ? symbol : '')} id='board'>
+                {moves.map((cell, i) => (
+                    <div className={'cell ' + cell}
+                         onClick={() => handleCellClick(i)} data-cell
+                         key={i + cell} index={i} id={'cell' + i}></div>
+                ))}
+              </div>
           )}
           {(!isReady && isLoading) && (
-            <div className="justify-center flex flex-col items-center relative h-full pb-40 xs:pb-52">
-              <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
-              <span className="loader"></span>
-            </div>
+              <div className="justify-center flex flex-col items-center relative h-full pb-40 xs:pb-52">
+                <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
+                <span className="loader"></span>
+              </div>
           )}
         </div>
       </div>
