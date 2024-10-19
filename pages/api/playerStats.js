@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     try {
         // Fetch the player's stats for logged-in users
         const player = await db.player.findUnique({
-            where: { email: session.user.email },
+            where: { username: session.user.username },
             include: { PlayerStats: true },
         });
 

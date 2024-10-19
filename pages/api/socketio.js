@@ -1,5 +1,7 @@
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import {calculateEloChange, getPlayerStats, updatePlayerStats} from "../../utils/playerUtils";
+import {db} from "../../lib/db";
 
 const Socketio = (req, res) => {
     // let ROOMS = [];
@@ -56,7 +58,6 @@ const Socketio = (req, res) => {
             }
 
             socket.onAny((event, args) => {
-
                 if (event === 'player-details') {
                     if (args.type === 'initial') {
                         const obj = {
@@ -209,6 +210,56 @@ const Socketio = (req, res) => {
                     }
 
                 });
+            });
+            const processedGames = new Set();
+
+            socket.on('update-game-result', async (data) => {
+                console.log('Received game result:', data);
+
+                const gameIdentifier = `${data.room}-${data.player1.username}-${data.player2.username}`;
+
+                if (processedGames.has(gameIdentifier)) {
+                    console.log('Game result already processed, skipping update');
+                    return;
+                }
+
+                processedGames.add(gameIdentifier);
+
+                try {
+                    const [player1Stats, player2Stats] = await Promise.all([
+                        getPlayerStats(data.player1.username),
+                        getPlayerStats(data.player2.username)
+                    ]);
+
+                    const player1OldRating = player1Stats?.elo || 1000;
+                    const player2OldRating = player2Stats?.elo || 1000;
+
+                    const [player1Update, player2Update] = await Promise.all([
+                        updatePlayerStats(data.player1.username, data.player1.result, player2OldRating),
+                        updatePlayerStats(data.player2.username, data.player2.result, player1OldRating)
+                    ]);
+
+                    console.log('Player 1 update:', player1Update);
+                    console.log('Player 2 update:', player2Update);
+
+                    // Emit updated ratings to clients
+                    io.to(data.room).emit('ratings-updated', {
+                        player1: {
+                            username: data.player1.username,
+                            oldRating: player1OldRating,
+                            newRating: player1Update.elo,
+                            eloChange: player1Update.eloChange
+                        },
+                        player2: {
+                            username: data.player2.username,
+                            oldRating: player2OldRating,
+                            newRating: player2Update.elo,
+                            eloChange: player2Update.eloChange
+                        }
+                    }); } catch (error) {
+                    console.error('Error updating player stats:', error);
+                    io.to(data.room).emit('stats-update-error', { message: 'Failed to update stats' });
+                }
             });
         });
 

@@ -11,12 +11,14 @@ import TimerBar from "../components/TimerBar";
 import useNoInitialEffect from "../helper/UseNoInitialEffect";
 import {signOut, useSession} from "next-auth/react";
 import PlayerStats from "../components/PlayerStats";
+import {getPlayerStats, updateBothPlayersStats, updatePlayerStats} from '../utils/playerUtils';
 
 export default function Home() { 
   const { data: session } = useSession()
   const userName = session?.user?.username || 'Guest';
   
   const [onlinePlayers, setOnlinePlayers] = useState(0);
+  const [guestId, setGuestId] = useState('');
   const [locationKeys, setLocationKeys] = useState([]);
 
   const DEFAULT_MOVES = useRef(['', '', '', '', '', '', '', '', '']);
@@ -55,22 +57,6 @@ export default function Home() {
   useEffect(() => {
 
     didMount.current = true;
-/////
-
-    // const getPlayerName = () => { //if player doesnt exist => sign up else signin
-    //   if (typeof getFromStorage('player-name') === 'undefined' ||
-    //     getFromStorage('player-name') === null ||
-    //     getFromStorage('player-name') === '') {
-    //     Router.push('/signup');
-    //   } else {
-    //     setMyName(getFromStorage('player-name'));
-    //     const record = JSON.parse(getFromStorage('player-record'));
-    //     setMyRecords(record);
-    //     //Router.push('/signin');
-    //   }
-    // }
-
-    /////
 
     fetch('/api/socketio').finally(() => {
       const s = io();
@@ -220,75 +206,107 @@ export default function Home() {
     return () => clearInterval(myInterval);
   }, [timer, isReady, isMyTurn, isMatchDone, myRoom, socket, symbol, pauseMyInterval])
 
-  // Game Result Event
   useEffect(() => {
-    const callback = (d) => {
-      if (d.result === 'done' && symbol) {
-        for (let i = 0; i < 9; i++) {
-          const el = document.getElementById('cell' + i);
-          el.classList.add('lose');
-
-          for (let j = 0; j < d.combination.length; j++) {
-            if (i === d.combination[j]) {
-              el.classList.remove('lose');
-            }
-
-
+    if (socket && session?.user) {
+      socket.on('connect', async () => {
+        console.log('Socket connected, fetching player stats');
+        try {
+          const stats = await getPlayerStats(session.user.username);
+          if (stats) {
+            setMyRecords({
+              wins: stats.win || 0,
+              loses: stats.lose || 0,
+              draws: stats.draw || 0,
+              total: stats.total || 0,
+              winRate: stats.total > 0 ? (stats.win / stats.total) * 100 : 0
+            });
+            console.log('Updated local state with fetched stats');
           }
+        } catch (error) {
+          console.error('Error getting player stats:', error);
         }
-
-        setTimeout(() => {
-          const iWin = d.winner == symbol ? true : false;
-          setIsWin(iWin);
-          if (iWin) {
-            setMatchScore(prevState => ({
-              me: prevState.me + 1,
-              enemy: prevState.enemy
-            }));
-            setMyRecords(d => ({ ...d, wins: d.wins + 1 }));
-          } else if (!iWin) {
-            setMatchScore(prevState => ({
-              me: prevState.me,
-              enemy: prevState.enemy + 1
-            }));
-            setMyRecords(d => ({ ...d, loses: d.loses + 1 }));
-          }
-          setIsMatchDone(true);
-        }, 200);
-
-      } else if (d.result === 'draw') {
-        setMyRecords(d => ({ ...d, draws: d.draws + 1 }));
-        setTimeout(() => {
-          setIsWin(null);
-          setIsMatchDone(true);
-        }, 200);
-      } else if (d.result === 'timesup' && symbol) {
-
-        const isWin = d.winner == symbol ? true : false
-        if (isWin) {
-          setMyRecords(d => ({ ...d, wins: d.wins + 1 }));
-        } else {
-          setMyRecords(d => ({ ...d, loses: d.loses + 1 }));
-        }
-
-        setTimeout(() => {
-          setIsWin(isWin);
-          setIsMatchDone(true);
-        }, 200);
-      }
-    }
-
-    if (socket) {
-      socket.on('game-result', (d) => callback(d));
+      });
     }
 
     return () => {
       if (socket) {
-        socket.off('game-result');
+        socket.off('connect');
       }
+    };
+  }, [socket, session]);
+
+  // Game Result Event
+  useEffect(() => {
+    const callback = async (d) => {
+      if ((d.result === 'done' || d.result === 'draw' || d.result === 'timesup') && symbol) {
+        const iWin = d.result === 'draw' ? null : d.winner === symbol;
+
+        setTimeout(async () => {
+          setIsWin(iWin);
+          setIsMatchDone(true);
+
+          let result;
+          if (iWin === true) {
+            result = 'win';
+            setMatchScore(prevState => ({
+              me: prevState.me + 1,
+              enemy: prevState.enemy
+            }));
+          } else if (iWin === false) {
+            result = 'lose';
+            setMatchScore(prevState => ({
+              me: prevState.me,
+              enemy: prevState.enemy + 1
+            }));
+          } else {
+            result = 'draw';
+          }
+
+          // Only the winner or the host (in case of a draw) should update
+          if (iWin || (isHost && iWin === null)) {
+            socket.emit('update-game-result', {
+              room: myRoom,
+              player1: {
+                username: session?.user?.username || guestId,
+                isGuest: !session?.user,
+                result: result
+              },
+              player2: {
+                username: oppName || 'unknown',
+                isGuest: oppName === 'unknown',
+                result: result === 'win' ? 'lose' : (result === 'lose' ? 'win' : 'draw')
+              }
+            });
+
+            console.log('Sent game result to server');
+          }
+        }, 200);
+
+        // Visual updates for 'done' result
+        if (d.result === 'done') {
+          for (let i = 0; i < 9; i++) {
+            const el = document.getElementById('cell' + i);
+            el.classList.add('lose');
+            for (let j = 0; j < d.combination?.length || 0; j++) {
+              if (i === d.combination[j]) {
+                el.classList.remove('lose');
+              }
+            }
+          }
+        }
+      }
+    };
+
+    if (socket) {
+      socket.on('game-result', callback);
     }
 
-  }, [socket, symbol])
+    return () => {
+      if (socket) {
+        socket.off('game-result', callback);
+      }
+    };
+  }, [socket, session, myRoom, oppName, symbol, guestId, isHost]);
 
   // Disconnect Event
   useEffect(() => {
@@ -429,22 +447,6 @@ export default function Home() {
     }
 
   }, [socket]);
-
-  useEffect(() => {
-    const total = myRecords.wins + myRecords.loses + myRecords.draws;
-    setMyRecords(d => ({
-      ...d,
-      total: total
-    }));
-
-    // setToStorage('player-record')
-
-
-  }, [myRecords.wins, myRecords.loses, myRecords.draws])
-
-  useNoInitialEffect(() => {
-    setToStorage('player-record', JSON.stringify(myRecords));
-  }, [myRecords]);
   
   const router = useRouter();
   useEffect(() => {
