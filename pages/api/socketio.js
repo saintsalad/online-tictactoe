@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
-import {calculateEloChange, getPlayerStats, updatePlayerStats} from "../../utils/playerUtils";
+import {getPlayerStats, updatePlayerStats} from "../../utils/playerUtils";
 import {db} from "../../lib/db";
 
 const Socketio = (req, res) => {
@@ -18,97 +18,39 @@ const Socketio = (req, res) => {
 
     let ROOMS = [];
     let PLAYERS = [];
-
+    let onlinePlayersCount = 0;
+    const connectedSockets = new Set();
+    
     res.status(200).json({ user: 'hazel' });
 
     if (!res.socket.server.io) {
         console.log('*First use, starting socket.io')
 
         const io = new Server(res.socket.server)
-
-        // SOCKET IOs
-
-        const getUniqueListBy = (arr, key) => {
-            return [...new Map(arr.map(item => [item[key], item])).values()]
-        }
-
-        const isPlayerExist = (obj) => {
-            for (let i = 0; i < PLAYERS.length; i++) {
-                if (PLAYERS[i].id === obj.id && PLAYERS[i].name === obj.name) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
+        
         io.on('connection', (socket) => {
+            console.log('New connection:', socket.id);
 
-            const emitserverData = () => {
-                io.emit('server-data', {
-                    onlinePlayers: PLAYERS.filter(p => {
-                        if (p.status === 'online') {
-                            return true;
-                        }
-
-                        return false
-                    }).length
-                })
+            if (!connectedSockets.has(socket.id)) {
+                console.log('New connection:', socket.id);
+                connectedSockets.add(socket.id);
+                onlinePlayersCount++;
+                io.emit('update-online-players', onlinePlayersCount);
             }
-
-            socket.onAny((event, args) => {
-                if (event === 'player-details') {
-                    if (args.type === 'initial') {
-                        const obj = {
-                            socketId: socket.id,
-                            id: args.id,
-                            name: args.name,
-                            win: 0,
-                            lose: 0,
-                            draw: 0,
-                            status: 'online'
-                        };
-
-                        if (!isPlayerExist(obj)) {
-                            PLAYERS.push(obj);
-                        } else {
-                            const objIndex = PLAYERS.findIndex(obj => obj.id === args.id);
-                            PLAYERS[objIndex].status = 'online';
-                            PLAYERS[objIndex].socketId = socket.id;
-                        }
-                    }
+            
+            socket.on('disconnect', () => {
+                if (connectedSockets.has(socket.id)) {
+                    console.log('Disconnected:', socket.id);
+                    connectedSockets.delete(socket.id);
+                    onlinePlayersCount = Math.max(0, onlinePlayersCount - 1);
+                    io.emit('update-online-players', onlinePlayersCount);
                 }
-
-                emitserverData();
             });
-
-            // socket.on('player-details', (data) => {
-            //     console.log(data);
-            // })
 
             socket.on('enemy-timer', (data) => {
                 socket.to(data.room).emit('enemy-timer', { timer: data.timer });
             });
-
-            socket.on('disconnecting', () => {
-                const room = Array.from(socket.rooms)[1];
-                socket.leave(room);
-                // socket.to(room).emit('enemy-disconnect', {});
-                socket.to(room).emit('exit-room', {});
-
-                // set the player to offline
-                const objIndex = PLAYERS.findIndex(obj => obj.socketId === socket.id);
-                if (objIndex >= 0) {
-                    PLAYERS[objIndex].status = 'offline';
-                    PLAYERS[objIndex].socketId = '';
-                }
-
-                // remove room/s that belongs to someone disconnected
-                ROOMS = ROOMS.filter(item => item.hostId !== socket.id);
-                emitserverData();
-            });
-
+            
             socket.on('exit-room', (data, callback) => {
                 socket.leave(data.room);
                 ROOMS = ROOMS.filter(item => item.room !== data.room);

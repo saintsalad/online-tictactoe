@@ -48,8 +48,8 @@ export const authOptions: NextAuthOptions = {
     ],
     callbacks: {
         async jwt({ token, user }) {
-            console.log("JWT Callback - token: ", token);
-            console.log("JWT Callback - user: ", user);
+            /*console.log("JWT Callback - token: ", token);
+            console.log("JWT Callback - user: ", user);*/
             if (user) {
                 token.id = user.id;
                 token.username = user.username;

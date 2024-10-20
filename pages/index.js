@@ -14,7 +14,7 @@ import PlayerStats from "../components/PlayerStats";
 import {getPlayerStats, updateBothPlayersStats, updatePlayerStats} from '../utils/playerUtils';
 
 export default function Home() { 
-  const { data: session } = useSession()
+  const { data: session,status } = useSession()
   const userName = session?.user?.username || 'Guest';
   
   const [onlinePlayers, setOnlinePlayers] = useState(0);
@@ -41,13 +41,6 @@ export default function Home() {
   const [openAlertModal, setOpenAlertModal] = useState(false);
   const mySetTimeout = useRef(setTimeout);
   const [enemyTimer, setEnemyTimer] = useState(TIMER_SECS);
-  const [myRecords, setMyRecords] = useState({
-    wins: 0,
-    loses: 0,
-    draws: 0,
-    total: 0,
-    winRate: 0
-  });
   const [pauseMyInterval, setPauseMyInterval] = useState(false);
   const [matchScore, setMatchScore] = useState({
     me: 0, enemy: 0
@@ -205,36 +198,7 @@ export default function Home() {
 
     return () => clearInterval(myInterval);
   }, [timer, isReady, isMyTurn, isMatchDone, myRoom, socket, symbol, pauseMyInterval])
-
-  useEffect(() => {
-    if (socket && session?.user) {
-      socket.on('connect', async () => {
-        console.log('Socket connected, fetching player stats');
-        try {
-          const stats = await getPlayerStats(session.user.username);
-          if (stats) {
-            setMyRecords({
-              wins: stats.win || 0,
-              loses: stats.lose || 0,
-              draws: stats.draw || 0,
-              total: stats.total || 0,
-              winRate: stats.total > 0 ? (stats.win / stats.total) * 100 : 0
-            });
-            console.log('Updated local state with fetched stats');
-          }
-        } catch (error) {
-          console.error('Error getting player stats:', error);
-        }
-      });
-    }
-
-    return () => {
-      if (socket) {
-        socket.off('connect');
-      }
-    };
-  }, [socket, session]);
-
+  
   // Game Result Event
   useEffect(() => {
     const callback = async (d) => {
@@ -430,24 +394,38 @@ export default function Home() {
   }, [socket]);
 
   useEffect(() => {
+    const socketInitializer = async () => {
+      await fetch('/api/socketio');
+      const newSocket = io();
 
-    const callback = (d) => {
-      setOnlinePlayers(d.onlinePlayers);
-      console.log('online')
-    }
+      newSocket.on('connect', () => {
+        console.log('Connected to server');
+      });
 
-    if (socket) {
-      socket.on('server-data', (d) => callback(d));
+      newSocket.on('update-online-players', (count) => {
+        setOnlinePlayers(count);
+      });
+
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.disconnect();
+      };
+    };
+
+    if (!socket) {
+      socketInitializer();
     }
 
     return () => {
       if (socket) {
-        socket.off('server-data', (d) => callback(d));
+        socket.disconnect();
       }
-    }
-
+    };
   }, [socket]);
-  
+
+
+
   const router = useRouter();
   useEffect(() => {
     router.beforePopState(({ as }) => {
