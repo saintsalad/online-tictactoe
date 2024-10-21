@@ -82,65 +82,70 @@ export default function SignIn({onSignIn }) {
     return (
         <>
             <AnimatePage>
-                <div className='signin grid place-items-center font-sans max-w-4xl mx-auto h-screen'>
-                        <div className='pt-9 pb-6 px-10 xs:px-8 xs:w-11/12 
-                        sm:w-10/12 w-7/12 md:7/12 rounded-md'>
-                            <div className='mb-2 text-2xl font-bold'>
-                                Login
-                            </div>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <div className="space-y-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="username"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="font-bold">Username</FormLabel>
-                                                    <FormControl>
-                                                        <Input 
-                                                            className="text-black" 
-                                                            placeholder="Username" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="password"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="font-bold">Password</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            className="text-black"
-                                                            type="password"
-                                                            placeholder="Enter your password"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <div className='footer d-block w-full flex xs:justify-center justify-end mt-5'>
-                                            <Button type="submit" className='bg-gradient-shadow relative rounded-full xs:w-full px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39]'>
-                                                Sign in
-                                            </Button>
+                <div className="bg-[url('/index.jpg')] bg-cover bg-center min-h-screen">
+                    <div className="bg-white bg-opacity-90 p-6 h-screen flex flex-col justify-between">
+                        <div className='flex-grow flex items-center justify-center'>
+                            <div className='bg-purple-300 p-8 rounded-lg border-4 border-black shadow-xl w-full max-w-md flex flex-col items-center'>
+                                <div className='text-3xl text-black font-bold mb-6 text-center'>
+                                    Login
+                                </div>
+                                <Form {...form} >
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-md space-y-4">
+                                        <div className="space-y-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="username"
+                                                render={({field}) => (
+                                                    <FormItem>
+                                                        <FormLabel className="block text-black text-lg font-bold mb-2">Username</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                className=" p-2 border-2 border-black rounded text-black"
+                                                                placeholder="Username" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage/>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="password"
+                                                render={({field}) => (
+                                                    <FormItem>
+                                                        <FormLabel className="block text-black text-lg font-bold mb-2">Password</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                className="w-full p-2 border-2 border-black rounded text-black"
+                                                                type="password"
+                                                                placeholder="Enter your password"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage/>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <div
+                                                className='footer d-block w-full flex xs:justify-center justify-end mt-5'>
+                                                <Button type="submit"
+                                                        className='bg-rose-400 px-4 py-2 font-bold text-white rounded-lg border-4 border-black shadow-xl transform hover:scale-110 hover:bg-rose-500 transition duration-200'>
+                                                    Sign in
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                </form>
-                            </Form>
-                            <div className="space-y-2">
-                                <p className="text-center text-sm text-gray-600 mt-2">
-                                    If you don&apos;t have an account, please&nbsp;
+                                    </form>
+                                </Form>
+                                <div className="space-y-2">
+                                    <p className="text-center text-sm text-gray-600 mt-2">
+                                        If you don&apos;t have an account, please&nbsp;
                                         <Link href="signup" className="text-blue-500 hover:underline">Sign up</Link>
-                                </p>
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                    </div>
                 </div>
             </AnimatePage>
         </>
-    );
+);
 }   

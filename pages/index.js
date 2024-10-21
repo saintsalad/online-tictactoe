@@ -12,6 +12,7 @@ import useNoInitialEffect from "../helper/UseNoInitialEffect";
 import {signOut, useSession} from "next-auth/react";
 import PlayerStats from "../components/PlayerStats";
 import {getPlayerStats, updateBothPlayersStats, updatePlayerStats} from '../utils/playerUtils';
+import TopPlayers from "../components/TopPlayers";
 
 export default function Home() { 
   const { data: session,status } = useSession()
@@ -549,115 +550,153 @@ export default function Home() {
   }
   
   return (
-    <AnimatePage>
+    <AnimatePage >
       <div className="app font-sans relative">
         <GameStartIntroModal open={openIntroModal}></GameStartIntroModal>
         <GameResultModal clickExit={handleResultModalExit}
-          clickPlayAgain={handleResultModalPlayAgain} modalDesc={resultModalDesc}
-          open={isMatchDone} win={isWin}></GameResultModal>
+                         clickPlayAgain={handleResultModalPlayAgain} modalDesc={resultModalDesc}
+                         open={isMatchDone} win={isWin}></GameResultModal>
         <AlertModal open={openAlertModal} clickExit={handleResultModalExit}></AlertModal>
+          <div  className="bg-[url('/index.jpg')] bg-cover bg-center min-h-screen">
+          <div className="bg-white bg-opacity-90 p-6 h-screen flex flex-col justify-between">
+            {isHost !== null &&
+                (
+                    <div className="relative w-auto">
+                      <div className="w-auto flex justify-center">
 
-        <div className="max-w-4xl mx-auto m-0 p-3 h-screen relative overflow-hidden xs:overflow-auto">
-          {isHost !== null &&
-            (
-              <div className="relative w-auto">
-                <div className="w-auto flex justify-center">
+                        <div className="flex items-center">
+                          <div
+                              className="mr-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.me}</div>
 
-                  <div className="flex items-center">
-                    <div className="mr-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.me}</div>
+                          <div className={"flex w-28 flex-col mr-10 " + (isMyTurn ? "" : "opacity-50")}>
+                            <div
+                                className="player-cardjustify-start relative overflow-hidden h-12 w-[120px] rounded-sm flex">
+                              <div
+                                  className={'symbol w-[40px] mr-2 h-full relative overflow-hidden flex justify-center items-center ' + symbol}></div>
+                              <div className="time-container min-w-[48px] text-3xl after:h-full items-center flex">
+                                <div>{timer}</div>
+                              </div>
+                            </div>
+                            <TimerBar timer={timer} matchDone={isMatchDone} secs={TIMER_SECS}
+                                      start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
+                            <div className="mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{userName}</div>
+                          </div>
+                        </div>
 
-                    <div className={"flex w-28 flex-col mr-10 " + (isMyTurn ? "" : "opacity-50")}>
-                      <div className="player-cardjustify-start relative overflow-hidden h-12 w-[120px] rounded-sm flex">
-                        <div className={'symbol w-[40px] mr-2 h-full relative overflow-hidden flex justify-center items-center ' + symbol}></div>
-                        <div className="time-container min-w-[48px] text-3xl after:h-full items-center flex">
-                          <div>{timer}</div>
+
+                        <div className="flex items-center">
+                          <div className={"flex w-28 flex-col justify-end  " + (!isMyTurn ? "" : "opacity-50")}>
+                            <div className="player-card justify-end relative overflow-hidden h-12 rounded-sm flex">
+                              <div
+                                  className="time-container min-w-[48px] text-3xl h-full items-center justify-end flex">
+                                <div>{enemyTimer}</div>
+                              </div>
+                              <div
+                                  className={'symbol w-[40px] ml-2 h-full relative overflow-hidden flex justify-center items-center ' + (symbol === 'x' ? 'circle' : 'x')}></div>
+                            </div>
+                            <TimerBar timer={enemyTimer} matchDone={isMatchDone} secs={TIMER_SECS}
+                                      start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
+
+                            <div
+                                className="flex justify-end mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{oppName || ' - '}</div>
+                          </div>
+
+                          <div
+                              className="ml-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.enemy}</div>
+                        </div>
+
+
+                      </div>
+
+                    </div>
+
+                )}
+
+            {(!isReady && myRoom === '') &&
+                (
+                    <div className="relative z-10">
+                      {/* Title */}
+                      <div
+                          className="flex justify-between items-center bg-indigo-600 p-3 rounded-lg border-4 border-black text-white shadow-xl mb-6">
+                        <div className="flex-grow">
+                          <h1 className="text-3xl font-bold ml-5">Tic-tac-toe Multiplayer Game</h1>
+                        </div>
+                        <div id="online-players-container" className="absolute flex left-3/4 items-center">
+                          <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
+                          <div className="flex -left-24 text-sm font-light">
+                            <span className="font-semibold mr-1">{onlinePlayers}</span>
+                            Online Player/s
+                        </div>
+                        </div>
+                        <div className="flex">
+                          {session?.user ? (
+                              <button disabled={!socket}
+                                      id="signout"
+                                      className="bg-rose-400 px-5 py-3 font-bold text-black rounded-3xl border-4 border-black shadow-xl transform hover:scale-110 hover:text-white hover:bg-rose-500 transition duration-200"
+                                      onClick={signOutUser}>Sign out</button>
+                          ) : (
+                              <button disabled={!socket}
+                                      id="signin"
+                                      className="bg-rose-400 px-5 py-3 font-bold text-black rounded-3xl border-4 border-black shadow-xl transform hover:scale-110 hover:text-white hover:bg-rose-500 transition duration-200"
+                                      onClick={signIn}>Sign in</button>
+                          )
+                          }
                         </div>
                       </div>
-                      <TimerBar timer={timer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && isMyTurn)} left={true}></TimerBar>
-                      <div className="mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{userName}</div>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-3 md:grid-cols-3 gap-4 flex-grow">
+                      {/* Ranking Section */}
+                        <div
+                            className="bg-purple-300 p-4 rounded-lg border-4 border-black shadow-xl h-full overflow-hidden">
+                        <h2 className="text-2xl font-bold mb-6 text-center">Ranking</h2>
+                            <hr className="border-2 border-black"/>
+                            <TopPlayers/>
+                          </div>
+                          {/* Game Section */}
+                          <div className="p-4 rounded-lg flex flex-col items-center justify-center">
+                            <div
+                                className="w-60 h-60 bg-yellow-300 mb-4 rounded-none border-4 border-black shadow-xl"></div>
+                            <button disabled={!socket}
+                                    id="findMatchBtn"
+                                    className="bg-rose-400 px-10 py-4 rounded-lg border-4 border-black mb-2 font-bold text-2xl shadow-xl hover:shadow-rose-600/40 transform hover:scale-110 hover:bg-rose-500 hover:text-white transition duration-200"
+                                    onClick={handleJoinRoom}>Find Match
+                            </button>
+                          </div>
+                          {/* Player Section */}
+                          <div
+                              className="bg-purple-300 p-4 rounded-lg border-4 border-black shadow-xl h-full overflow-hidden">
+                            <h2 className="text-3xl font-bold mb-6 text-center">Stats</h2>
+                            <hr className="border-2 border-black"/>
 
-
-                  <div className="flex items-center">
-                    <div className={"flex w-28 flex-col justify-end  " + (!isMyTurn ? "" : "opacity-50")}>
-                      <div className="player-card justify-end relative overflow-hidden h-12 rounded-sm flex">
-                        <div className="time-container min-w-[48px] text-3xl h-full items-center justify-end flex">
-                          <div>{enemyTimer}</div>
+                            <div className="text-center text-4xl xs:text-3xl font-light mt-9">Name: {userName}</div>
+                            <div className="flex mt-12">
+                              <PlayerStats/>
+                            </div>
+                          </div>
                         </div>
-                        <div className={'symbol w-[40px] ml-2 h-full relative overflow-hidden flex justify-center items-center ' + (symbol === 'x' ? 'circle' : 'x')}></div>
+                        <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:pt-7">
+                        </div>
                       </div>
-                      <TimerBar timer={enemyTimer} matchDone={isMatchDone} secs={TIMER_SECS} start={(isReady && !isLoading && !isMyTurn)} left={false}></TimerBar>
-
-                      <div className="flex justify-end mt-1 whitespace-nowrap overflow-hidden overflow-ellipsis">{oppName || ' - '}</div>
-                    </div>
-
-                    <div className="ml-4 rounded-sm text-2xl w-10 h-3/6 bg-gray-50 bg-opacity-10 flex justify-center items-center font-medium">{matchScore.enemy}</div>
-                  </div>
-
-
+                )
+            }
+            {(isReady && !isLoading && myRoom !== '') && (
+                <div style={{pointerEvents: (isMyTurn ? 'auto' : 'none')}}
+                     className={'board ' + (isMyTurn ? symbol : '')} id='board'>
+                  {moves.map((cell, i) => (
+                      <div className={'cell ' + cell}
+                           onClick={() => handleCellClick(i)} data-cell
+                           key={i + cell} index={i} id={'cell' + i}></div>
+                  ))}
                 </div>
-
-              </div>
-
             )}
-
-          {(!isReady && myRoom === '') &&
-            (
-              <div className="flex xs:flex-col">
-                <div className="flex flex-col w-full p-5">
-                  <div className="text-5xl xs:text-4xl font-bold text-[#F7B12D] mt-9">Online Tic-tac-toe</div>
-                  <div className="text-4xl xs:text-3xl font-light mt-9">Welcome, {userName}!</div>
-                  <div className="flex mt-12 space-x-2">
-                    <button disabled={!socket}
-                      id="findMatchBtn"
-                      className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                      onClick={handleJoinRoom}>Find Match</button>
-                    {session?.user? (
-                        <button disabled={!socket}
-                                id="signout"
-                                className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                                onClick={signOutUser}>Sign out</button>
-                    ) : (
-                      <button disabled={!socket}
-                        id="signin"
-                        className="bg-gradient-shadow relative focus:outline-none focus:ring-4 focus:ring-offset-0 focus:ring-[#f7b02d39] rounded-full w-36 border-0 shadow-sm px-7 py-2 bg-gradient-to-tr from-[#F7B12D] via-[#FA8247] to-[#FC585D] text-sm font-medium text-white hover:opacity-90 focus:ring-offset-transparent sm:ml-3 sm:text-sm"
-                        onClick={signIn}>Sign in</button>
-                        )
-                    }
-                  </div>
+            {(!isReady && isLoading) && (
+                <div className="justify-center flex flex-col items-center relative h-full pb-40 xs:pb-52">
+                  <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
+                  <span className="loader"></span>
                 </div>
-                <div className="flex xs:w-full h-min flex-wrap rounded-md p-5 xs:pt-7">
-                  <div id="online-players-container" className="flex items-center h-10 w-full">
-                    <div className="mr-2 inline w-2 h-2 bg-green-500 rounded-full relative"></div>
-                    <div className="text-sm font-light"><span className="font-semibold mr-1">{onlinePlayers}</span>
-                      Online Player/s
-                    </div>
-                  </div>
-                    <PlayerStats/>
-                  </div>
-                </div>
-
-            )
-          }
-          {(isReady && !isLoading && myRoom !== '') && (
-              <div style={{pointerEvents: (isMyTurn ? 'auto' : 'none')}}
-                   className={'board ' + (isMyTurn ? symbol : '')} id='board'>
-                {moves.map((cell, i) => (
-                    <div className={'cell ' + cell}
-                         onClick={() => handleCellClick(i)} data-cell
-                         key={i + cell} index={i} id={'cell' + i}></div>
-                ))}
-              </div>
-          )}
-          {(!isReady && isLoading) && (
-              <div className="justify-center flex flex-col items-center relative h-full pb-40 xs:pb-52">
-                <div className="text-sm mb-2 opacity-80">waiting for opponent . . .</div>
-                <span className="loader"></span>
-              </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+        </div>
     </AnimatePage>
   )
 }

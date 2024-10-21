@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import TopPlayers from "./TopPlayers";
 
 const PlayerStats = () => {
     const [playerStats, setPlayerStats] = useState(null);
@@ -35,32 +34,32 @@ const PlayerStats = () => {
         : 0;
 
     return (
-        <div className="grid gap-4 grid-cols-2">
-            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#EA0599] p-3 rounded-md h-20 max-w-full">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-6 flex-grow">
+            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md h-20 max-w-full">
                 <div className="text-xs">Total Matches</div>
                 <div className="font-semibold text-2xl">{totalMatches}</div>
             </div>
 
-            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#9A0F98] p-3 rounded-md h-20 max-w-full">
+            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md h-20 max-w-full">
                 <div className="text-xs">Win Rate</div>
                 <div className="font-semibold text-xl">{winRate.toFixed(2)}%</div>
             </div>
 
-            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#6A0572] p-3 rounded-md h-20 max-w-full">
+            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md h-20 max-w-full">
                 <div className="text-xs">Draws</div>
                 <div className="font-semibold text-2xl">{playerStats.draw || 0}</div>
             </div>
 
-            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#39065A] p-3 rounded-md h-20 max-w-full">
+            <div className="bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md h-20 max-w-full">
                 <div className="text-xs">Loses</div>
                 <div className="font-semibold text-2xl">{playerStats.lose || 0}</div>
             </div>
 
-            <div className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-80 bg-[#FC585D] p-3 rounded-md h-20 max-w-full">
+            <div className="col-span-2 w-full bg-gradient-shadow relative flex flex-col justify-between bg-opacity-20 bg-[#7c7c7c] p-3 rounded-md h-20 max-w-full">
                 <div className="text-xs">Rank Points (Elo)</div>
                 <div className="font-semibold text-2xl text-right">{playerStats.elo || 1000}</div>
             </div>
-            <TopPlayers/>
+            
         </div>
     );
 };
