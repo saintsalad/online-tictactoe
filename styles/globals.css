@@ -38,13 +38,6 @@ a {
   --mark-size: calc(var(--cell-size) * .75);
 }
 
-body {
-  margin: 0;
-  background: linear-gradient(#040B18, #3A374E);
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
 .time-container {
   font-family: 'Digital';
 }
