@@ -654,7 +654,9 @@ export default function Home() {
                           {/* Game Section */}
                           <div className="p-4 rounded-lg flex flex-col items-center justify-center">
                             <div
-                                className="w-60 h-60 bg-yellow-300 mb-4 rounded-none border-4 border-black shadow-xl"></div>
+                                className="w-60 h-60 bg-[url('/game.png')] bg-cover bg-center mb-4 rounded-none border-4 border-black shadow-xl">
+
+                            </div>
                             <button disabled={!socket}
                                     id="findMatchBtn"
                                     className="bg-rose-400 px-10 py-4 rounded-lg border-4 border-black mb-2 font-bold text-2xl shadow-xl hover:shadow-rose-600/40 transform hover:scale-110 hover:bg-rose-500 hover:text-white transition duration-200"
